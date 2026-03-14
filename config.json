@@ -1,0 +1,88 @@
+{
+  "economic_threshold": 0.0,
+  "baseline_margin_resale": {
+    "Abbigliamento": {
+      "Luxury": 4.0,
+      "Mass Market": 3.0
+    },
+    "Accessori": {
+      "Luxury": 5.0,
+      "Mass Market": 3.0
+    }
+  },
+  "baseline_margin_upcycling": {
+    "Abbigliamento": {
+      "Luxury": 3.0,
+      "Mass Market": 2.0
+    },
+    "Accessori": {
+      "Luxury": 3.0,
+      "Mass Market": 2.0
+    }
+  },
+  "cost_resale": {
+    "Abbigliamento": {
+      "Luxury": 3.55,
+      "Mass Market": 1.3
+    },
+    "Accessori": {
+      "Luxury": 3.55,
+      "Mass Market": 1.3
+    }
+  },
+  "cost_upcycling": {
+    "Abbigliamento": {
+      "Luxury": 2.14,
+      "Mass Market": 1.67
+    },
+    "Accessori": {
+      "Luxury": 3.21,
+      "Mass Market": 1.67
+    }
+  },
+  "resale_adjust": {
+    "quality_condition": {
+      "Excellent": 0.5,
+      "Good": 0.0,
+      "Worn out": -0.5
+    }
+  },
+  "upcycling_adjust": {
+    "creative_potential": {
+      "High": 1.0,
+      "Medium": 0.5,
+      "None": 0.0
+    },
+    "material_quality": {
+      "High": 0.5,
+      "Medium": 0.3,
+      "Low": 0.0
+    }
+  },
+  "resale_bias": 0.0,
+  "upcycling_bias": 0.0,
+  "operational_neutral_band": 0.35,
+  "environment_neutral_band": 0.25,
+  "environment_matrix": {
+    "Abbigliamento": {
+      "Luxury": {
+        "resale": 1.97,
+        "upcycling": 2.0
+      },
+      "Mass Market": {
+        "resale": 2.02,
+        "upcycling": 2.61
+      }
+    },
+    "Accessori": {
+      "Luxury": {
+        "resale": 1.97,
+        "upcycling": 3.0
+      },
+      "Mass Market": {
+        "resale": 2.02,
+        "upcycling": 1.57
+      }
+    }
+  }
+}
