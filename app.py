@@ -54,25 +54,19 @@ def _box(label: str, subtitle: str = "", tone: Tone = "info"):
     """
     Render a colored HTML box with:
       - bold label on first line
-      - subtitle rendered with preserved newlines (white-space: pre-wrap)
+      - subtitle honoring line breaks, perfectly aligned with the label (no leading-space indent).
+    Uses white-space: pre-line to keep '\n' but collapse leading spaces.
     """
     bg, border, text = _tone_colors(tone)
-    subtitle_fmt = _nl_after_period(subtitle)
+    subtitle_fmt = _nl_after_period(subtitle)  # <- mantiene i \n e rimuove spazi/tabs a inizio riga
+
+    # ATTENZIONE: NESSUNA indentazione prima di {subtitle_fmt} per evitare spazi testuali.
     html = f"""
-    <div style="
-        border:1px solid {border};
-        background:{bg};
-        color:{text};
-        padding:12px 14px;
-        border-radius:10px;
-        line-height:1.35;
-        ">
-        <div style="font-weight:700;">{label}</div>
-        <div style="white-space:pre-wrap;margin-top:4px;">
-            {subtitle_fmt}
-        </div>
-    </div>
-    """
+<div style="border:1px solid {border};background:{bg};color:{text};padding:12px 14px;border-radius:10px;line-height:1.35;">
+  <div style="font-weight:700;">{label}</div>
+  <div style="white-space:pre-line;margin-top:4px;">{subtitle_fmt}</div>
+</div>
+"""
     st.markdown(html, unsafe_allow_html=True)
 
 def _status_pill(ok: bool, ok_text: str = "PASS", ko_text: str = "FAIL"):
