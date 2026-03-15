@@ -87,13 +87,23 @@ st.caption(f"Formula: Δ = (Resale Econ Gap − Upcycling Adjusted Gap) × Scale
 with st.expander("Dettaglio calcolo operatività (per quadrante)"):
     node  = cfg["operational"]["matrix"][category][segment]
     scale = cfg["operational"]["scale_context"][category][segment]
-    st.markdown(
-        f"- **Scale context**: `{scale}`
-"
-        f"- **Resale** — Econ gap: `{node['resale']['econ_gap']}` → Adjusted = `{oper.adjusted_resale_gap}`
-"
-        f"- **Upcycling** — Adjusted gap (base): `{node['upcycling']['adjusted_gap']}` → Adjusted = `{oper.adjusted_upcycling_gap}`"
+
+    resale_econ_gap = node["resale"]["econ_gap"]
+    up_adj_gap_base = node["upcycling"]["adjusted_gap"]
+
+    details_md = (
+        "- **Scale context**: `{scale}`\n"
+        "- **Resale** — Econ gap: `{resale}` → Adjusted = `{adj_res}`\n"
+        "- **Upcycling** — Adjusted gap (base): `{up_base}` → Adjusted = `{adj_up}`"
+    ).format(
+        scale=scale,
+        resale=resale_econ_gap,
+        adj_res=f"{oper.adjusted_resale_gap:.2f}",
+        up_base=up_adj_gap_base,
+        adj_up=f"{oper.adjusted_upcycling_gap:.2f}",
     )
+
+    st.markdown(details_md)
 
 # Sezione E — Ambientale
 st.subheader("Sezione E — Environmental leverage")
