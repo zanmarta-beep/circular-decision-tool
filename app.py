@@ -1,4 +1,4 @@
-# app.py (v0.2.7) — D box = only your comment; line breaks after periods in all boxes
+# app.py (v0.2.8) — HTML boxes w/ line breaks; D shows only your comment; F comment in-box + Trade-off note
 import json
 import re
 import streamlit as st
@@ -13,59 +13,71 @@ st.title("Circular Strategy Advisor")
 st.caption("Decision-support tool to orient between resale and upcycling")
 
 # -------------------------------
-# Helpers (badges, pills, text formatting)
+# Helpers (HTML boxes, pills, text formatting)
 # -------------------------------
-Tone = Literal["success", "info", "warn", "error", "neutral"]
+Tone = Literal["success", "info", "warn", "error"]
 
 def _nl_after_period(text: str) -> str:
     """
-    Insert line breaks after '.', '?', '!' followed by a space.
-    Keeps existing newlines and ensures a final period if missing
-    (only for non-empty lines).
+    Insert explicit line breaks after '.', '?', '!' followed by a space.
+    Preserve existing newlines. Return empty string if None.
     """
-    if text is None:
+    if not text:
         return ""
-    # Normalize Windows CRLF → LF
-    s = text.replace("\r\n", "\n").replace("\r", "\n").strip()
-    # Split existing lines, then enforce breaks after punctuation within each line
-    lines = []
-    for raw in s.split("\n"):
-        t = raw.strip()
-        if not t:
-            continue
-        # Add newline after punctuation tokens followed by space
-        t = re.sub(r'\.\s+', '.\n', t)
-        t = re.sub(r'\?\s+', '?\n', t)
-        t = re.sub(r'!\s+', '!\n', t)
-        # If the line has no ending punctuation, leave as is
-        lines.append(t)
-    return "\n".join(lines)
+    s = text.replace("\r\n", "\n").replace("\r", "\n")
+    # First normalize ' .  ' sequences into '.\n'
+    s = re.sub(r'\.\s+', '.\n', s)
+    s = re.sub(r'\?\s+', '?\n', s)
+    s = re.sub(r'!\s+', '!\n', s)
+    # Remove accidental double blank lines
+    s = re.sub(r'\n{3,}', '\n\n', s)
+    return s.strip()
+
+def _tone_colors(tone: Tone) -> tuple[str, str, str]:
+    """
+    Returns (bg, border, text) HEX colors for the box.
+    success=green, info=blue, warn=yellow, error=red.
+    """
+    if tone == "success":
+        return ("#ECFDF5", "#34D399", "#065F46")  # green-50, green-400, green-800
+    if tone == "error":
+        return ("#FEF2F2", "#F87171", "#7F1D1D")  # red-50, red-400, red-900
+    if tone == "warn":
+        return ("#FFFBEB", "#FBBF24", "#92400E")  # amber-50, amber-400, amber-900
+    # info (default)
+    return ("#EFF6FF", "#60A5FA", "#1E3A8A")      # blue-50, blue-400, blue-900
 
 def _box(label: str, subtitle: str = "", tone: Tone = "info"):
     """
-    Unified badge renderer.
-    tone: success=green, info=blue, warn=yellow, error=red, neutral=grey (caption)
-    Subtitle supports '\\n' line breaks; after formatting, we ensure breaks after periods.
+    Render a colored HTML box with:
+      - bold label on first line
+      - subtitle rendered with preserved newlines (white-space: pre-wrap)
     """
+    bg, border, text = _tone_colors(tone)
     subtitle_fmt = _nl_after_period(subtitle)
-    content = f"**{label}**" + (f"\n{subtitle_fmt}" if subtitle_fmt else "")
-    if tone == "success":
-        st.success(content)
-    elif tone == "error":
-        st.error(content)
-    elif tone == "warn":
-        st.warning(content)
-    elif tone == "neutral":
-        st.caption(content)
-    else:  # info
-        st.info(content)
+    html = f"""
+    <div style="
+        border:1px solid {border};
+        background:{bg};
+        color:{text};
+        padding:12px 14px;
+        border-radius:10px;
+        line-height:1.35;
+        ">
+        <div style="font-weight:700;">{label}</div>
+        <div style="white-space:pre-wrap;margin-top:4px;">
+            {subtitle_fmt}
+        </div>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
 
 def _status_pill(ok: bool, ok_text: str = "PASS", ko_text: str = "FAIL"):
     """
     Renders a rounded pill: green '✓ PASS' or red '✗ FAIL' with no arrow.
     """
     color = "#16a34a" if ok else "#dc2626"   # green-600 / red-600
-    bg    = f"{color}1A"                     # translucent background
+    bg    = f"{color}1A"
     text  = f"✓ {ok_text}" if ok else f"✗ {ko_text}"
     st.markdown(
         f"""
@@ -121,10 +133,10 @@ def badge_economic_label(econ_initial: str) -> tuple[str, str, Tone]:
         return ("Both feasible", "Both strategies meet margin − cost > 0.", "info")
     return ("✗ None feasible", "No strategy meets margin − cost > 0.", "error")  # red
 
-def badge_operational_label(econ_initial: str, d_status: str, S18: float, band: float) -> tuple[str, Tone]:
+def badge_operational_label(econ_initial: str, d_status: str) -> tuple[str, Tone]:
     """
     Section D colors: Green (only & preferred), Blue (neutral), Red (none).
-    Returns (label, tone).  (Subtitle is REMOVED by request: only user's comment will be shown.)
+    Returns (label, tone).  (No 'status/delta' line inside the box, by request.)
     """
     if econ_initial in ["Resale only", "Upcycling only", "None feasible"]:
         label = "✗ None feasible" if econ_initial == "None feasible" else econ_initial
@@ -139,7 +151,7 @@ def badge_operational_label(econ_initial: str, d_status: str, S18: float, band: 
 def badge_final_from_operational(d_status: str) -> tuple[str, Tone]:
     """
     Section F mirrors D for color; Neutral becomes “Hybrid / Strategic use”.
-    Returns (final_label, tone).  Subtitle is entirely the user's long text.
+    Returns (final_label, tone).  Subtitle will be the long user text.
     """
     if d_status in ["Resale only", "Upcycling only"]:
         return (d_status, "success")
@@ -149,18 +161,18 @@ def badge_final_from_operational(d_status: str) -> tuple[str, Tone]:
         return ("✗ None feasible", "error")
     return ("Hybrid / Strategic use", "info")
 
-# Long recommendation texts (F) — user wording with explicit line breaks
+# Long recommendation texts (F) — user wording; we rely on _nl_after_period for line breaks
 FINAL_LONG_TEXT = {
     "Resale preferred": (
-        "Resale emerges as the preferred circular strategy due to its superior scalability and more attractive economic performance.\n"
+        "Resale emerges as the preferred circular strategy due to its superior scalability and more attractive economic performance. "
         "Upcycling remains viable but is not structurally central."
     ),
     "Upcycling preferred": (
-        "Upcycling emerges as the preferred strategy as product-specific value enhancers compensate for higher operational intensity, enabling superior value creation.\n"
+        "Upcycling emerges as the preferred strategy as product-specific value enhancers compensate for higher operational intensity, enabling superior value creation. "
         "Resale remains viable but is not structurally central."
     ),
     "Hybrid / Strategic use": (
-        "No dominant circular configuration emerges.\n"
+        "No dominant circular configuration emerges. "
         "Resale and upcycling can coexist strategically, enabling flexibility in value capture across different product subsets."
     ),
     "Resale only": "Only resale is economically sustainable.",
@@ -250,7 +262,7 @@ elif econ.feasible_upcycling and not econ.feasible_resale:
 else:
     econ_initial = "None feasible"
 
-# End-of-section colored box (B) — rule line + explanatory line, with line breaks enforced
+# End-of-section HTML box (B): rule line + explanatory line, with breaks
 b_label, b_rule, b_tone = badge_economic_label(econ_initial)
 b_expl = ECON_EXPL["None feasible" if econ_initial == "None feasible" else econ_initial]
 _box(b_label, f"{b_rule}\n{b_expl}", b_tone)
@@ -280,7 +292,7 @@ col1.metric("Adjusted Resale Gap", f"{oper.adjusted_resale_gap:.2f}")
 col2.metric("Adjusted Upcycling Gap", f"{oper.adjusted_upcycling_gap:.2f}")
 col3.metric("Δ operational (Resale − Up)", f"{S18:.2f}")
 
-# Formula moved inside expander, with your wording
+# Formula inside expander (wording updated)
 with st.expander("Operational details (by quadrant)"):
     st.caption("Formula: Δ = (Resale Econ Gap − Upcycling Adjusted Gap) × Scale Context, compared against Band ±{b}".format(b=op_band))
     node  = cfg["operational"]["matrix"][category][segment]
@@ -295,14 +307,14 @@ with st.expander("Operational details (by quadrant)"):
     ).format(
         scale=scale,
         resale=resale_econ_gap,
-        adj_res=f"{oper.adjusted_upcycling_gap:.2f}" if False else f"{oper.adjusted_resale_gap:.2f}",
+        adj_res=f"{oper.adjusted_resale_gap:.2f}",
         up_base=up_adj_gap_base,
         adj_up=f"{oper.adjusted_upcycling_gap:.2f}",
     )
     st.markdown(details_md)
 
-# End-of-section colored box (D) — ONLY your comment inside (no status/delta line)
-d_label, d_tone = badge_operational_label(econ_initial, d_status, S18, op_band)
+# End-of-section HTML box (D): ONLY your comment inside
+d_label, d_tone = badge_operational_label(econ_initial, d_status)
 d_expl = OPER_EXPL[d_status]
 _box(d_label, d_expl, d_tone)
 
@@ -331,19 +343,18 @@ relevance_line = (
     "Environmental impact is NOT decision-relevant under the current configuration."
 )
 
-# End-of-section colored box (E) — two lines, with normalized breaks
+# End-of-section HTML box (E): two lines
 e_label = "Environmental leverage applied" if relevance_applied else "Environmental neutral"
-e_tone  = "info"  # keep blue
-_box(e_label, f"{direction_line}.\n{relevance_line}", e_tone)
+_box(e_label, f"{direction_line}.\n{relevance_line}", "info")
 
 # -------------------------------
-# Section F — Model Recommendation (mirrors D label; adds trade-off if needed)
+# Section F — Model Recommendation (mirrors D label; adds Trade-off if needed)
 # -------------------------------
 st.subheader("Section F — Model Recommendation")
 
 f_label, f_tone = badge_final_from_operational(d_status)
 
-# Trade-off note if chosen model ≠ lower-impact model
+# Trade-off note if chosen model ≠ lower-impact model (from Section E)
 chosen_model = None
 if f_label in ["Resale only", "Resale preferred"]:
     chosen_model = "Resale"
@@ -353,9 +364,16 @@ elif f_label in ["Upcycling only", "Upcycling preferred"]:
 env_lower = "Upcycling" if delta_env > 0 else ("Resale" if delta_env < 0 else None)
 tradeoff_note = ""
 if chosen_model and env_lower and (chosen_model != env_lower):
-    tradeoff_note = "\nTrade-off between economic feasibility and environmental performance."
+    tradeoff_note = "Trade-off between economic feasibility and environmental performance."
 
-final_text = FINAL_LONG_TEXT[f_label] + tradeoff_note
+# Long text + optional trade-off in the same HTML box; force line breaks after periods
+final_text = FINAL_LONG_TEXT[f_label]
+if tradeoff_note:
+    # Ensure final_text ends with a period for correct line breaking
+    if not final_text.strip().endswith("."):
+        final_text = final_text.strip() + "."
+    final_text = f"{final_text} {tradeoff_note}"
+
 _box(f_label, final_text, f_tone)
 
 # -------------------------------
