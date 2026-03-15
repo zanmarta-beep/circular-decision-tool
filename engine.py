@@ -1,7 +1,10 @@
-# engine.py (v0.2)
+# engine.py (v0.2) — allineato alla logica Excel
 from dataclasses import dataclass
 from typing import Dict, Any
 
+# -------------------------------
+# Data models
+# -------------------------------
 @dataclass
 class Inputs:
     product_category: str      # "Abbigliamento" | "Accessori"
@@ -25,15 +28,15 @@ class EconomicResult:
 class OperationalResult:
     adjusted_resale_gap: float
     adjusted_upcycling_gap: float
-    delta_resale_minus_up: float
-    tag: str  # "Neutral" | "Preference resale" | "Preference upcycling"
+    delta_resale_minus_up: float   # positivo => favore Resale
+    tag: str                       # "Neutral" | "Preference resale" | "Preference upcycling"
 
 @dataclass
 class EnvironmentalResult:
     env_resale: float
     env_upcycling: float
-    delta_resale_minus_up: float
-    tag: str
+    delta_resale_minus_up: float   # positivo => Resale migliore (impatto minore)
+    tag: str                       # "Neutral" | "Preference resale" | "Preference upcycling"
 
 @dataclass
 class Recommendation:
@@ -43,26 +46,34 @@ class Recommendation:
     rationale_environment: str
     decision_trace: list[str]
 
+# -------------------------------
+# Economic block (Step B)
+# -------------------------------
 def compute_economic(inputs: Inputs, cfg: Dict[str, Any]) -> EconomicResult:
+    # Baseline distinte per strategia
     base_resale = cfg["baseline_margin_resale"][inputs.product_category][inputs.price_segment]
-    base_up = cfg["baseline_margin_upcycling"][inputs.product_category][inputs.price_segment]
+    base_up     = cfg["baseline_margin_upcycling"][inputs.product_category][inputs.price_segment]
 
-    resale_q_adj = cfg["resale_adjust"]["quality_condition"][inputs.quality_condition]
+    # Adjust specifici
+    resale_q_adj    = cfg["resale_adjust"]["quality_condition"][inputs.quality_condition]
     up_creative_adj = cfg["upcycling_adjust"]["creative_potential"][inputs.creative_potential]
     up_material_adj = cfg["upcycling_adjust"]["material_quality"][inputs.material_quality]
 
+    # Margini finali
     margin_resale = base_resale + resale_q_adj + cfg["resale_bias"]
-    margin_up = base_up + up_creative_adj + up_material_adj + cfg["upcycling_bias"]
+    margin_up     = base_up     + up_creative_adj + up_material_adj + cfg["upcycling_bias"]
 
+    # Costi fissi per quadrante
     cost_resale = cfg["cost_resale"][inputs.product_category][inputs.price_segment]
-    cost_up = cfg["cost_upcycling"][inputs.product_category][inputs.price_segment]
+    cost_up     = cfg["cost_upcycling"][inputs.product_category][inputs.price_segment]
 
-    thr = cfg["economic_threshold"]
+    # Regola economica: PASS se (margin - cost) > threshold
+    thr         = cfg["economic_threshold"]
     econ_resale = margin_resale - cost_resale
-    econ_up = margin_up - cost_up
+    econ_up     = margin_up     - cost_up
 
-    feasible_resale = econ_resale > thr
-    feasible_upcycling = econ_up > thr
+    feasible_resale     = econ_resale > thr
+    feasible_upcycling  = econ_up     > thr
 
     return EconomicResult(
         margin_resale=margin_resale,
@@ -75,25 +86,33 @@ def compute_economic(inputs: Inputs, cfg: Dict[str, Any]) -> EconomicResult:
         feasible_upcycling=feasible_upcycling
     )
 
+# -------------------------------
+# Operational block (Step D, deterministico)
+# -------------------------------
 def compute_operational(category: str, segment: str, cfg: Dict[str, Any]) -> OperationalResult:
     """
-    Versione v0.2 — Allineata a Excel:
-    - Resale Adjusted Gap = Resale Economic Gap * Scale Context
-    - Upcycling Adjusted Gap = (Adjusted Upcycling Gap da tabella) * Scale Context
-    - Δ operativo = (Resale Economic Gap − Adjusted Upcycling Gap) * Scale Context
-    - Classificazione con banda ± operational_neutral_band
+    v0.2 — Allineata a Excel:
+
+    Adjusted Resale Gap     = Resale Economic Gap × Scale Context
+    Adjusted Upcycling Gap  = (Adjusted Upcycling Gap da tabella) × Scale Context
+    Δ operativo             = (Resale Economic Gap − Adjusted Upcycling Gap base) × Scale Context
+
+    Classificazione con banda ± operational_neutral_band.
     """
-    m = cfg["operational"]["matrix"][category][segment]
+    node  = cfg["operational"]["matrix"][category][segment]
     scale = cfg["operational"]["scale_context"][category][segment]
-    band = cfg["operational_neutral_band"]
+    band  = cfg["operational_neutral_band"]
 
-    resale_econ_gap = m["resale"]["econ_gap"]
-    up_adj_gap_base = m["upcycling"]["adjusted_gap"]
+    # Valori di partenza dalla matrice operativa
+    resale_econ_gap = node["resale"]["econ_gap"]          # es. 1.10
+    up_adj_gap_base = node["upcycling"]["adjusted_gap"]   # es. 0.13  (già "adjusted" lato upcycling)
 
-    adj_resale = resale_econ_gap * scale
-    adj_up = up_adj_gap_base * scale
-    delta = (resale_econ_gap - up_adj_gap_base) * scale
+    # Calcoli allineati a Excel
+    adj_resale = resale_econ_gap * scale                  # es. 1.10 * 0.85 = 0.93
+    adj_up     = up_adj_gap_base * scale                  # es. 0.13 * 0.85 = 0.11
+    delta      = (resale_econ_gap - up_adj_gap_base) * scale  # es. 0.82
 
+    # Banda di neutralità
     if abs(delta) <= band:
         tag = "Neutral"
     elif delta > band:
@@ -108,12 +127,15 @@ def compute_operational(category: str, segment: str, cfg: Dict[str, Any]) -> Ope
         tag=tag
     )
 
+# -------------------------------
+# Environmental block (Step E)
+# -------------------------------
 def compute_environment(category: str, segment: str, cfg: Dict[str, Any]) -> EnvironmentalResult:
-    node = cfg["environment_matrix"][category][segment]
-    env_resale = node["resale"]
-    env_up = node["upcycling"]
-    delta = env_resale - env_up
-    band = cfg["environment_neutral_band"]
+    node        = cfg["environment_matrix"][category][segment]
+    env_resale  = node["resale"]
+    env_up      = node["upcycling"]
+    delta       = env_resale - env_up                      # positivo => resale migliore (impatto minore)
+    band        = cfg["environment_neutral_band"]
 
     if abs(delta) <= band:
         tag = "Neutral"
@@ -124,7 +146,11 @@ def compute_environment(category: str, segment: str, cfg: Dict[str, Any]) -> Env
 
     return EnvironmentalResult(env_resale, env_up, delta, tag)
 
+# -------------------------------
+# Recommendation (Step F)
+# -------------------------------
 def recommend(econ: EconomicResult, oper: OperationalResult, env: EnvironmentalResult, cfg: Dict[str, Any]) -> Recommendation:
+    # 1) Gating economico
     if econ.feasible_upcycling and not econ.feasible_resale:
         label = "Upcycling only"
     elif econ.feasible_resale and not econ.feasible_upcycling:
@@ -132,11 +158,13 @@ def recommend(econ: EconomicResult, oper: OperationalResult, env: EnvironmentalR
     elif not econ.feasible_resale and not econ.feasible_upcycling:
         label = "None"
     else:
+        # 2) Tie-breaker operativo
         if oper.tag == "Preference resale":
             label = "Resale only (operational preference)"
         elif oper.tag == "Preference upcycling":
             label = "Upcycling only (operational preference)"
         else:
+            # 3) Tie-breaker ambientale
             if env.tag == "Preference resale":
                 label = "Resale only (environmental preference)"
             elif env.tag == "Preference upcycling":
@@ -144,6 +172,7 @@ def recommend(econ: EconomicResult, oper: OperationalResult, env: EnvironmentalR
             else:
                 label = "Both feasible"
 
+    # Rationale
     if label.startswith("Upcycling"):
         rationale_econ = (
             "Upcycling supera la regola economica (margin − cost > 0), resale no."
@@ -162,15 +191,25 @@ def recommend(econ: EconomicResult, oper: OperationalResult, env: EnvironmentalR
         rationale_econ = "Entrambe le strategie superano la regola economica (margin − cost > 0)."
 
     rationale_oper = (
-        f"Operational: {oper.tag} (Adj Res={oper.adjusted_resale_gap:.2f}, "
-        f"Adj Up={oper.adjusted_upcycling_gap:.2f}, Δ={oper.delta_resale_minus_up:.2f}, "
+        f"Operational: {oper.tag} "
+        f"(Adj Res={oper.adjusted_resale_gap:.2f}, "
+        f"Adj Up={oper.adjusted_upcycling_gap:.2f}, "
+        f"Δ={oper.delta_resale_minus_up:.2f}, "
         f"banda ±{cfg['operational_neutral_band']})."
     )
-    rationale_env = f"Environmental: {env.tag} (Δ res−up = {env.delta_resale_minus_up:.2f}, banda ±{cfg['environment_neutral_band']})."
+    rationale_env  = (
+        f"Environmental: {env.tag} "
+        f"(Δ res−up = {env.delta_resale_minus_up:.2f}, "
+        f"banda ±{cfg['environment_neutral_band']})."
+    )
 
     trace = [
-        f"Economic feasibility → resale={'PASS' if econ.feasible_resale else 'FAIL'}, upcycling={'PASS' if econ.feasible_upcycling else 'FAIL'}",
+        f"Economic feasibility → resale={'PASS' if econ.feasible_resale else 'FAIL'}, "
+        f"upcycling={'PASS' if econ.feasible_upcycling else 'FAIL'}",
         f"Operational → {oper.tag}",
-        f"Environmental → {env.tag}"
+        f"Environmental → {env.tag}",
     ]
-    return Recommendation(label, rationale_econ, rationale_oper, rationale_env, trace)
+    return Recommendation(label, rationale_economic=rationale_econ,
+                          rationale_operational=rationale_oper,
+                          rationale_environment=rationale_env,
+                          decision_trace=trace)
