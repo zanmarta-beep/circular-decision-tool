@@ -1,4 +1,4 @@
-# app.py (v0.2.3) — English UI + end-of-section badges w/ color rules
+# app.py (v0.2.4) — English UI + defaults + section explanations + updated colors
 import json
 import streamlit as st
 from typing import Literal
@@ -12,7 +12,7 @@ st.title("Circular Strategy Advisor")
 st.caption("Decision-support tool to orient between resale and upcycling")
 
 # -------------------------------
-# Helpers for end-of-section badges
+# Helpers for end-of-section badges & explanations
 # -------------------------------
 Tone = Literal["success", "info", "warn", "error", "neutral"]
 
@@ -33,10 +33,55 @@ def _box(label: str, subtitle: str = "", tone: Tone = "info"):
     else:  # info
         st.info(content)
 
-def badge_economic_label(econ_initial: str, econ) -> tuple[str, str, Tone]:
+# Explanations requested by Marta
+ECON_EXPL = {
+    "Resale only":   "Only resale passes the economic feasibility threshold",
+    "Upcycling only":"Only upcycling passes the economic feasibility threshold",
+    "Both feasible": "Both models are economically admissible at this stage",
+    "None feasible": "Neither model is economically viable under current assumptions",
+}
+
+OPER_EXPL = {
+    "Resale only":   "Only resale passes the economic feasibility threshold",
+    "Upcycling only":"Only upcycling passes the economic feasibility threshold",
+    "Both feasible": "Both models are economically admissible at this stage",
+    "None feasible": "Neither model is economically viable under current assumptions",
+    "Resale preferred": (
+        "Resale more capable of absorbing increasing operational complexity and volumes.\n"
+        "Upcycling remains economically viable (playing a complementary or selective role)."
+    ),
+    "Upcycling preferred": (
+        "Upcycling more capable of absorbing increasing operational complexity and volumes.\n"
+        "Resale remains economically viable (playing a complementary or selective role)."
+    ),
+    "Neutral": "No dominant model; hybrid or parallel adoption possible",
+}
+
+# Sections D and F color rules (requested)
+def badge_operational_label(econ_initial: str, d_status: str, S18: float, band: float) -> tuple[str, str, Tone]:
     """
-    End label for Section B (Economic outcome).
-    Colors remain as defined earlier for Section B:
+    End label for Section D (Operational Feasibility).
+    Colors:
+      - Green: Resale only / Upcycling only / Resale preferred / Upcycling preferred
+      - Blue:  Neutral
+      - Red:   None feasible
+    """
+    if econ_initial in ["Resale only", "Upcycling only", "None feasible"]:
+        label = econ_initial
+        subtitle = "Economic gating."
+        tone = "error" if label == "None feasible" else "success"
+        return (label, subtitle, tone)
+
+    if d_status == "Resale preferred":
+        return ("Resale preferred", f"Δ = {S18:.2f} · band ±{band}", "success")
+    if d_status == "Upcycling preferred":
+        return ("Upcycling preferred", f"Δ = {S18:.2f} · band ±{band}", "success")
+    return ("Neutral", f"Δ = {S18:.2f} · band ±{band}", "info")
+
+def badge_economic_label(econ_initial: str) -> tuple[str, str, Tone]:
+    """
+    End label for Section B (Economic Feasibility).
+    Colors for B unchanged:
       - Green: Resale only / Upcycling only
       - Blue:  Both feasible
       - Red:   None feasible
@@ -49,46 +94,13 @@ def badge_economic_label(econ_initial: str, econ) -> tuple[str, str, Tone]:
         return ("Both feasible", "Both strategies meet margin − cost > 0", "info")
     return ("None feasible", "No strategy meets margin − cost > 0", "error")
 
-def badge_operational_label(econ_initial: str, d_status: str, S18: float, band: float) -> tuple[str, str, Tone]:
-    """
-    End label for Section D (Operational feasibility).
-    Your requested colors:
-      - Green:  Resale only / Upcycling only / Resale preferred / Upcycling preferred
-      - Blue:   Neutral
-      - Red:    None feasible (kept as red to flag failure)
-    """
-    # Economic gating: if B != Both feasible, D repeats B
-    if econ_initial in ["Resale only", "Upcycling only", "None feasible"]:
-        label = econ_initial
-        subtitle = "Economic gating."
-        tone = "error" if label == "None feasible" else "success"
-        return (label, subtitle, tone)
-
-    # Otherwise use Δ
-    if d_status == "Resale preferred":
-        return ("Resale preferred", f"Δ = {S18:.2f} · band ±{band}", "success")
-    if d_status == "Upcycling preferred":
-        return ("Upcycling preferred", f"Δ = {S18:.2f} · band ±{band}", "success")
-    return ("Neutral", f"Δ = {S18:.2f} · band ±{band}", "info")
-
-def badge_environment_label(env, band: float) -> tuple[str, str, Tone]:
-    """
-    End label for Section E (informative).
-      - Blue:   Preference resale/upcycling
-      - Grey:   Neutral
-    """
-    if env.tag == "Preference resale":
-        return ("Environmental: Preference resale", f"Δ res−up = {env.delta_resale_minus_up:.2f} · band ±{band}", "info")
-    if env.tag == "Preference upcycling":
-        return ("Environmental: Preference upcycling", f"Δ res−up = {env.delta_resale_minus_up:.2f} · band ±{band}", "info")
-    return ("Environmental: Neutral", f"Δ res−up = {env.delta_resale_minus_up:.2f} · band ±{band}", "neutral")
-
 def badge_final_from_operational(d_status: str) -> tuple[str, str, Tone]:
     """
-    Section F mirrors Section D (as requested).
-      - Green:  Resale only / Upcycling only / Resale preferred / Upcycling preferred
-      - Blue:   Both feasible (since D=Neutral)
-      - Red:    None feasible
+    Section F mirrors D for label, except:
+      - D=Neutral -> F label becomes 'Hybrid / Strategic use' (blue)
+    Other colors:
+      - Green: Resale only / Upcycling only / Resale preferred / Upcycling preferred
+      - Red:   None feasible
     """
     if d_status in ["Resale only", "Upcycling only"]:
         return (d_status, "Economic gating.", "success")
@@ -96,7 +108,29 @@ def badge_final_from_operational(d_status: str) -> tuple[str, str, Tone]:
         return (d_status, "Operational preference (Δ out of band).", "success")
     if d_status == "None feasible":
         return ("None feasible", "Revisit assumptions, costs or margin levers.", "error")
-    return ("Both feasible", "Choose based on operational capacity and brand positioning.", "info")
+    # Neutral -> Hybrid / Strategic use
+    return ("Hybrid / Strategic use", "Choose based on operational capacity and brand positioning.", "info")
+
+# Long recommendation texts (Section F)
+FINAL_LONG_TEXT = {
+    "Resale preferred": (
+        "Resale emerges as the preferred circular strategy due to its superior scalability "
+        "and more attractive economic performance.\n"
+        "Upcycling remains viable but is not structurally central."
+    ),
+    "Upcycling preferred": (
+        "Upcycling emerges as the preferred strategy as product-specific value enhancers compensate "
+        "for higher operational intensity, enabling superior value creation.\n"
+        "Resale remains viable but is not structurally central."
+    ),
+    "Hybrid / Strategic use": (
+        "No dominant circular configuration emerges. Resale and upcycling can coexist strategically, "
+        "enabling flexibility in value capture across different product subsets."
+    ),
+    "Resale only": "Only resale is economically sustainable.",
+    "Upcycling only": "Only upcycling is economically sustainable.",
+    "None feasible": "Neither model is economically viable under current assumptions."
+}
 
 # -------------------------------
 # Load configuration
@@ -105,7 +139,7 @@ with open("config.json", "r", encoding="utf-8") as f:
     cfg = json.load(f)
 
 # -------------------------------
-# Sidebar — Section A (Inputs)
+# Sidebar — Section A (Inputs) with defaults + baseline note
 # -------------------------------
 with st.sidebar:
     st.header("Section A — Inputs")
@@ -113,9 +147,16 @@ with st.sidebar:
     segment  = st.selectbox("Price segment", ["Luxury", "Mass Market"])
 
     st.markdown("**Product parameters (for Resale / Upcycling)**")
-    quality   = st.selectbox("Quality / Condition", ["Excellent", "Good", "Worn out"])
-    creative  = st.selectbox("Creative potential", ["High", "Medium", "None"])
-    material  = st.selectbox("Material quality", ["High", "Medium", "Low"])
+    quality_options  = ["Excellent", "Good", "Worn out"]
+    creative_options = ["High", "Medium", "None"]
+    material_options = ["High", "Medium", "Low"]
+
+    # Defaults: Good / None / Low
+    quality  = st.selectbox("Quality / Condition", quality_options, index=quality_options.index("Good"))
+    creative = st.selectbox("Creative potential",  creative_options, index=creative_options.index("None"))
+    material = st.selectbox("Material quality",    material_options, index=material_options.index("Low"))
+
+    st.caption("Baseline Scenario (Quality/Condition: Good, Creative Potential: None; Material Quality: Low)")
 
     run = st.button("Run assessment", use_container_width=True)
 
@@ -135,13 +176,13 @@ inp  = Inputs(
 )
 
 econ = compute_economic(inp, cfg)
-oper = compute_operational(category, segment, cfg)   # v0.2: (category, segment, cfg)
+oper = compute_operational(category, segment, cfg)
 env  = compute_environment(category, segment, cfg)
 
 # -------------------------------
-# Section B — Economic Outcome
+# Section B — Economic Feasibility
 # -------------------------------
-st.subheader("Section B — Economic Outcome")
+st.subheader("Section B — Economic Feasibility")
 c1, c2, c3, c4, c5, c6 = st.columns(6)
 c1.metric("Margin Resale", f"{econ.margin_resale:.2f}")
 c2.metric("Cost Resale", f"{econ.cost_resale:.2f}")
@@ -150,7 +191,7 @@ c4.metric("Margin Upcycling", f"{econ.margin_upcycling:.2f}")
 c5.metric("Cost Upcycling", f"{econ.cost_upcycling:.2f}")
 c6.metric("Score Upcycling (margin − cost)", f"{econ.econ_score_upcycling:.2f}", "PASS" if econ.feasible_upcycling else "FAIL")
 
-# Economic outcome label (for D logic as well)
+# Economic outcome (for D logic too)
 if econ.feasible_resale and econ.feasible_upcycling:
     econ_initial = "Both feasible"
 elif econ.feasible_resale and not econ.feasible_upcycling:
@@ -160,9 +201,10 @@ elif econ.feasible_upcycling and not econ.feasible_resale:
 else:
     econ_initial = "None feasible"
 
-# End-of-section badge (B)
-b_label, b_sub, b_tone = badge_economic_label(econ_initial, econ)
+# End-of-section badge + explanation (B)
+b_label, b_sub, b_tone = badge_economic_label(econ_initial)
 _box(b_label, b_sub, b_tone)
+st.markdown(f"*{ECON_EXPL[econ_initial]}*")
 
 # -------------------------------
 # Section D — Operational Feasibility (deterministic, aligned with Excel)
@@ -210,9 +252,10 @@ with st.expander("Operational details (by quadrant)"):
     )
     st.markdown(details_md)
 
-# End-of-section badge (D)
+# End-of-section badge + explanation (D)
 d_label, d_sub, d_tone = badge_operational_label(econ_initial, d_status, S18, band)
 _box(d_label, d_sub, d_tone)
+st.markdown(f"*{OPER_EXPL[d_status]}*")
 
 # -------------------------------
 # Section E — Environmental Leverage (informative)
@@ -222,21 +265,30 @@ d1, d2, d3 = st.columns(3)
 d1.metric("Impact Resale (↓ is better)", f"{env.env_resale:.2f}")
 d2.metric("Impact Upcycling (↓ is better)", f"{env.env_upcycling:.2f}")
 d3.metric("Δ (Resale − Upcycling)", f"{env.delta_resale_minus_up:.2f}")
-st.caption("Environmental relevance: **{t}** — band ±{b}".format(t=env.tag, b=cfg["environment_neutral_band"]))
 
-# End-of-section badge (E)
-e_label, e_sub, e_tone = badge_environment_label(env, cfg["environment_neutral_band"])
-_box(e_label, e_sub, e_tone)
+# Replace previous captions/badges with two explanatory lines
+delta_env = env.delta_resale_minus_up
+line1 = "Upcycling has a lower environmental impact" if delta_env > 0 else \
+        ("Resale has a lower environmental impact" if delta_env < 0 else "Same environmental impact")
+line2 = ("Environmental performance relevant under the current configuration."
+         if abs(delta_env) > cfg["environment_neutral_band"]
+         else "Environmental impact is NOT decision-relevant under the current configuration.")
+st.markdown(f"**{line1}.**")
+st.markdown(line2)
 
 # -------------------------------
-# Section F — Model Recommendation (mirrors Section D)
+# Section F — Model Recommendation (mirrors D for label; richer text)
 # -------------------------------
 st.subheader("Section F — Model Recommendation")
+
 f_label, f_sub, f_tone = badge_final_from_operational(d_status)
 _box(f_label, f_sub, f_tone)
+
+# Long explanatory text (your wording)
+st.markdown(FINAL_LONG_TEXT[f_label])
 
 # Optional: Decision trace
 with st.expander("Decision trace"):
     st.write(f"Step B → {econ_initial}")
     st.write(f"Step D → {d_status}")
-    st.write(f"Step E → {env.tag}")
+    st.write(f"Step E → Δ={delta_env:.2f}")
