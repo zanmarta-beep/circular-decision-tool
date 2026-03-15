@@ -84,5 +84,79 @@
         "upcycling": 1.57
       }
     }
+  },
+  "operational": {
+    "scale_context": {
+      "Abbigliamento": {
+        "Luxury": 1.05,
+        "Mass Market": 0.85
+      },
+      "Accessori": {
+        "Luxury": 1.05,
+        "Mass Market": 0.85
+      }
+    },
+    "matrix": {
+      "Abbigliamento": {
+        "Luxury": {
+          "resale": {
+            "econ_buffer": 2.23,
+            "scr": 0.627348643,
+            "coeff_norm": 0.39,
+            "econ_gap": 0.17
+          },
+          "upcycling": {
+            "econ_buffer": 1.93,
+            "scr": 0.90311804,
+            "coeff_norm": 0.47,
+            "adjusted_gap": 0.41
+          }
+        },
+        "Mass Market": {
+          "resale": {
+            "econ_buffer": 2.35,
+            "scr": 1.814285714,
+            "coeff_norm": 0.64,
+            "econ_gap": 1.1
+          },
+          "upcycling": {
+            "econ_buffer": 1.16,
+            "scr": 0.69487909,
+            "coeff_norm": 0.41,
+            "adjusted_gap": 0.13
+          }
+        }
+      },
+      "Accessori": {
+        "Luxury": {
+          "resale": {
+            "econ_buffer": 1.82,
+            "scr": 0.512484691,
+            "coeff_norm": 0.34,
+            "econ_gap": 0.49
+          },
+          "upcycling": {
+            "econ_buffer": 1.4,
+            "scr": 0.435412027,
+            "coeff_norm": 0.3,
+            "adjusted_gap": -0.06
+          }
+        },
+        "Mass Market": {
+          "resale": {
+            "econ_buffer": 3.63,
+            "scr": 2.799183673,
+            "coeff_norm": 0.74,
+            "econ_gap": 1.26
+          },
+          "upcycling": {
+            "econ_buffer": 1.16,
+            "scr": 0.69487909,
+            "coeff_norm": 0.41,
+            "adjusted_gap": 0.13
+          }
+        }
+      }
+    }
   }
 }

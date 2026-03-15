@@ -1,4 +1,4 @@
-# app.py
+# app.py (v0.2)
 import json
 import streamlit as st
 from engine import (
@@ -10,7 +10,6 @@ st.set_page_config(page_title="Circular Strategy Advisor", layout="wide")
 st.title("Circular Strategy Advisor")
 st.caption("Strumento di supporto decisionale per orientarsi tra resale e upcycling")
 
-# Carica configurazione
 with open("config.json", "r", encoding="utf-8") as f:
     cfg = json.load(f)
 
@@ -24,18 +23,12 @@ with st.sidebar:
     creative  = st.selectbox("Potenziale creativo", ["High", "Medium", "None"])
     material  = st.selectbox("Qualità materiale", ["High", "Medium", "Low"])
 
-    st.divider()
-    st.markdown("**Operational feasibility (delta res−up)**")
-    st.caption("Usato come tie‑breaker quando entrambe sono economicamente fattibili.")
-    oper_delta = st.slider("Δ operativo (Resale − Upcycling)", min_value=-2.0, max_value=2.0, value=0.0, step=0.05)
-
     run = st.button("Esegui valutazione", use_container_width=True)
 
 if not run:
-    st.info("Imposta i parametri nella barra laterale e clicca **Esegui valutazione**.")
+    st.info("Imposta i parametri e clicca **Esegui valutazione**.")
     st.stop()
 
-# --- Calcolo
 inp = Inputs(
     product_category=category,
     price_segment=segment,
@@ -45,11 +38,11 @@ inp = Inputs(
 )
 
 econ = compute_economic(inp, cfg)
-oper = compute_operational(oper_delta, cfg)
+oper = compute_operational(category, segment, cfg)
 env  = compute_environment(category, segment, cfg)
 rec  = recommend(econ, oper, env, cfg)
 
-# --- Sezione B: Economia
+# Sezione B — Economico
 st.subheader("Sezione B — Esito economico")
 c1, c2, c3, c4, c5, c6 = st.columns(6)
 c1.metric("Margin Resale", f"{econ.margin_resale:.2f}")
@@ -59,33 +52,58 @@ c4.metric("Margin Upcycling", f"{econ.margin_upcycling:.2f}")
 c5.metric("Cost Upcycling", f"{econ.cost_upcycling:.2f}")
 c6.metric("Score Upcycling (margin − cost)", f"{econ.econ_score_upcycling:.2f}", "PASS" if econ.feasible_upcycling else "FAIL")
 
-# --- Sezione C: Interpretazione economica
-st.subheader("Sezione C — Interpretazione economica")
-if econ.feasible_upcycling and not econ.feasible_resale:
-    st.info("Solo **Upcycling** supera la regola economica (margin − cost > 0).")
+# Stato economico iniziale (per coerenza con Step D)
+if econ.feasible_resale and econ.feasible_upcycling:
+    econ_initial = "Both feasible"
 elif econ.feasible_resale and not econ.feasible_upcycling:
-    st.info("Solo **Resale** supera la regola economica (margin − cost > 0).")
-elif econ.feasible_resale and econ.feasible_upcycling:
-    st.info("**Entrambe** le strategie superano la regola economica.")
+    econ_initial = "Resale only"
+elif econ.feasible_upcycling and not econ.feasible_resale:
+    econ_initial = "Upcycling only"
 else:
-    st.warning("**Nessuna** strategia è economicamente fattibile con i parametri attuali del quadrante.")
+    econ_initial = "None feasible"
 
-# --- Sezione D: Operational feasibility
+# Sezione D — Operatività
 st.subheader("Sezione D — Operational feasibility")
-b1, b2 = st.columns(2)
-b1.metric("Δ operativo (Resale − Upcycling)", f"{oper.delta_resale_minus_up:.2f}")
-b2.metric("Stato", oper.tag)
-st.caption(f"Banda di neutralità ±{cfg['operational_neutral_band']} — fuori banda funge da tie‑breaker se entrambe sono economicamente fattibili.")
+S18 = oper.delta_resale_minus_up
+band = cfg["operational_neutral_band"]
 
-# --- Sezione E: Environmental leverage
+if econ_initial in ["Resale only", "Upcycling only", "None feasible"]:
+    d_status = econ_initial
+else:
+    if S18 > band:
+        d_status = "Resale preferred"
+    elif S18 < -band:
+        d_status = "Upcycling preferred"
+    else:
+        d_status = "Neutral"
+
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Adjusted Resale Gap", f"{oper.adjusted_resale_gap:.2f}")
+col2.metric("Adjusted Upcycling Gap", f"{oper.adjusted_upcycling_gap:.2f}")
+col3.metric("Δ operativo (Resale − Up)", f"{S18:.2f}")
+col4.metric("Stato", d_status)
+
+st.caption(f"Formula: Δ = (Resale Econ Gap − Upcycling Adjusted Gap) × Scale Context · Banda ±{band}")
+with st.expander("Dettaglio calcolo operatività (per quadrante)"):
+    node  = cfg["operational"]["matrix"][category][segment]
+    scale = cfg["operational"]["scale_context"][category][segment]
+    st.markdown(
+        f"- **Scale context**: `{scale}`
+"
+        f"- **Resale** — Econ gap: `{node['resale']['econ_gap']}` → Adjusted = `{oper.adjusted_resale_gap}`
+"
+        f"- **Upcycling** — Adjusted gap (base): `{node['upcycling']['adjusted_gap']}` → Adjusted = `{oper.adjusted_upcycling_gap}`"
+    )
+
+# Sezione E — Ambientale
 st.subheader("Sezione E — Environmental leverage")
 d1, d2, d3 = st.columns(3)
 d1.metric("Impatto Resale (↓ meglio)", f"{env.env_resale:.2f}")
 d2.metric("Impatto Upcycling (↓ meglio)", f"{env.env_upcycling:.2f}")
 d3.metric("Δ (Resale − Upcycling)", f"{env.delta_resale_minus_up:.2f}")
-st.caption(f"Rilevanza ambientale: **{env.tag}** — banda di neutralità ±{cfg['environment_neutral_band']}")
+st.caption(f"Rilevanza ambientale: **{env.tag}** — banda ±{cfg['environment_neutral_band']}")
 
-# --- Sezione F: Raccomandazione
+# Sezione F — Raccomandazione
 st.subheader("Sezione F — Raccomandazione del modello")
 if rec.label.startswith("Upcycling"):
     st.success(f"**{rec.label}**")
@@ -96,12 +114,11 @@ elif rec.label == "Both feasible":
 else:
     st.error("**None** — rivedere le assunzioni o intervenire su leve di margin/operatività.")
 
-# --- Sezione G: Motivazioni e trace
+# Sezione G — Motivazioni e trace
 st.subheader("Sezione G — Motivazioni e trace")
 st.markdown(f"- **Economico**: {rec.rationale_economic}")
 st.markdown(f"- **Operativo**: {rec.rationale_operational}")
 st.markdown(f"- **Ambientale**: {rec.rationale_environment}")
-
 with st.expander("Decision trace"):
-    for step in rec.decision_trace:
-        st.write("• " + step)
+    st.write(f"Economic initial: {econ_initial}")
+    st.write(f"Operational status: {d_status}")
