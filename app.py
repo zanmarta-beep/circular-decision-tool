@@ -1,4 +1,4 @@
-# app.py (v0.2.5+) — PASS/FAIL red pill in Section B + your UI/UX customizations
+# app.py (v0.2.6) — UI/UX refined: boxes with your texts (+ line breaks), red FAIL pills, trade-off note in F
 import json
 import streamlit as st
 from typing import Literal
@@ -20,8 +20,10 @@ def _box(label: str, subtitle: str = "", tone: Tone = "info"):
     """
     Unified badge renderer.
     tone: success=green, info=blue, warn=yellow, error=red, neutral=grey (caption)
+    Supports '\\n' line breaks in subtitle.
     """
-    content = f"**{label}**" + (f" — {subtitle}" if subtitle else "")
+    # Ensure a visible split between label and text
+    content = f"**{label}**" + (f"\n{subtitle}" if subtitle else "")
     if tone == "success":
         st.success(content)
     elif tone == "error":
@@ -58,18 +60,19 @@ def _status_pill(ok: bool, ok_text: str = "PASS", ko_text: str = "FAIL"):
     )
 
 # --- Your exact explanatory texts (Section B and D) ---
+# (We will add a '.' if the sentence has no trailing period; then we inject '\n' where needed.)
 ECON_EXPL = {
-    "Resale only":    "Only resale passes the economic feasibility threshold",
-    "Upcycling only": "Only upcycling passes the economic feasibility threshold",
-    "Both feasible":  "Both models are economically admissible at this stage",
-    "None feasible":  "Neither model is economically viable under current assumptions",
+    "Resale only":    "Only resale passes the economic feasibility threshold.",
+    "Upcycling only": "Only upcycling passes the economic feasibility threshold.",
+    "Both feasible":  "Both models are economically admissible at this stage.",
+    "None feasible":  "Neither model is economically viable under current assumptions.",
 }
 
 OPER_EXPL = {
-    "Resale only":    "Only resale passes the economic feasibility threshold",
-    "Upcycling only": "Only upcycling passes the economic feasibility threshold",
-    "Both feasible":  "Both models are economically admissible at this stage",
-    "None feasible":  "Neither model is economically viable under current assumptions",
+    "Resale only":    "Only resale passes the economic feasibility threshold.",
+    "Upcycling only": "Only upcycling passes the economic feasibility threshold.",
+    "Both feasible":  "Both models are economically admissible at this stage.",
+    "None feasible":  "Neither model is economically viable under current assumptions.",
     "Resale preferred": (
         "Resale more capable of absorbing increasing operational complexity and volumes.\n"
         "Upcycling remains economically viable (playing a complementary or selective role)."
@@ -78,7 +81,7 @@ OPER_EXPL = {
         "Upcycling more capable of absorbing increasing operational complexity and volumes.\n"
         "Resale remains economically viable (playing a complementary or selective role)."
     ),
-    "Neutral": "No dominant model; hybrid or parallel adoption possible",
+    "Neutral": "No dominant model; hybrid or parallel adoption possible.",
 }
 
 # Colors per your rules
@@ -88,13 +91,13 @@ def badge_economic_label(econ_initial: str) -> tuple[str, str, Tone]:
     Returns (label, short_rule, tone).
     """
     if econ_initial == "Resale only":
-        return ("Resale only", "Economic pass: margin − cost (Resale) > 0", "success")
+        return ("Resale only", "Economic pass: margin − cost (Resale) > 0.", "success")
     if econ_initial == "Upcycling only":
-        return ("Upcycling only", "Economic pass: margin − cost (Upcycling) > 0", "success")
+        return ("Upcycling only", "Economic pass: margin − cost (Upcycling) > 0.", "success")
     if econ_initial == "Both feasible":
-        return ("Both feasible", "Both strategies meet margin − cost > 0", "info")
+        return ("Both feasible", "Both strategies meet margin − cost > 0.", "info")
     # None feasible → red + ✗ prefix
-    return ("✗ None feasible", "No strategy meets margin − cost > 0", "error")
+    return ("✗ None feasible", "No strategy meets margin − cost > 0.", "error")
 
 def badge_operational_label(econ_initial: str, d_status: str, S18: float, band: float) -> tuple[str, str, Tone]:
     """
@@ -108,42 +111,40 @@ def badge_operational_label(econ_initial: str, d_status: str, S18: float, band: 
         return (label, subtitle, tone)
 
     if d_status == "Resale preferred":
-        return ("Resale preferred", f"Δ = {S18:.2f} · band ±{band}", "success")
+        return ("Resale preferred", f"Δ = {S18:.2f} · band ±{band}.", "success")
     if d_status == "Upcycling preferred":
-        return ("Upcycling preferred", f"Δ = {S18:.2f} · band ±{band}", "success")
-    return ("Neutral", f"Δ = {S18:.2f} · band ±{band}", "info")
+        return ("Upcycling preferred", f"Δ = {S18:.2f} · band ±{band}.", "success")
+    return ("Neutral", f"Δ = {S18:.2f} · band ±{band}.", "info")
 
 def badge_final_from_operational(d_status: str) -> tuple[str, str, Tone]:
     """
-    Section F mirrors D for color; neutral becomes “Hybrid / Strategic use”.
-    Returns (final_label, subtitle, tone).
+    Section F mirrors D for color; Neutral becomes “Hybrid / Strategic use”.
+    Returns (final_label, subtitle, tone). Subtitle will be replaced with your long text.
     """
     if d_status in ["Resale only", "Upcycling only"]:
-        return (d_status, "Economic gating.", "success")
+        return (d_status, "", "success")
     if d_status in ["Resale preferred", "Upcycling preferred"]:
-        return (d_status, "Operational preference (Δ out of band).", "success")
+        return (d_status, "", "success")
     if d_status == "None feasible":
-        return ("✗ None feasible", "Revisit assumptions, costs or margin levers.", "error")
-    return ("Hybrid / Strategic use", "Choose based on operational capacity and brand positioning.", "info")
+        return ("✗ None feasible", "", "error")
+    return ("Hybrid / Strategic use", "", "info")
 
-# Long recommendation texts (Section F)
+# Long recommendation texts (Section F) — EXACT wording with line breaks after the period
 FINAL_LONG_TEXT = {
     "Resale preferred": (
-        "Resale emerges as the preferred circular strategy due to its superior scalability "
-        "and more attractive economic performance.\n"
+        "Resale emerges as the preferred circular strategy due to its superior scalability and more attractive economic performance.\n"
         "Upcycling remains viable but is not structurally central."
     ),
     "Upcycling preferred": (
-        "Upcycling emerges as the preferred strategy as product-specific value enhancers compensate "
-        "for higher operational intensity, enabling superior value creation.\n"
+        "Upcycling emerges as the preferred strategy as product-specific value enhancers compensate for higher operational intensity, enabling superior value creation.\n"
         "Resale remains viable but is not structurally central."
     ),
     "Hybrid / Strategic use": (
-        "No dominant circular configuration emerges. Resale and upcycling can coexist strategically, "
-        "enabling flexibility in value capture across different product subsets."
+        "No dominant circular configuration emerges.\n"
+        "Resale and upcycling can coexist strategically, enabling flexibility in value capture across different product subsets."
     ),
     "Resale only": "Only resale is economically sustainable.",
-    "Upcycling only": "Only upcycling is economically sustainable.",
+    "Upcycling only": "Only Upcycling is economically sustainable.",
     "✗ None feasible": "Neither model is economically viable under current assumptions."
 }
 
@@ -229,11 +230,10 @@ elif econ.feasible_upcycling and not econ.feasible_resale:
 else:
     econ_initial = "None feasible"
 
-# End-of-section colored box (B) — box text contains your rule + your explanation
-b_label, b_sub, b_tone = badge_economic_label(econ_initial)
-short_rule = b_sub
-long_line  = ECON_EXPL["None feasible" if econ_initial == "None feasible" else econ_initial]
-_box(b_label, f"{short_rule} — {long_line}", b_tone)
+# End-of-section colored box (B) — rule on first line + your explanation on next line
+b_label, b_rule, b_tone = badge_economic_label(econ_initial)
+b_expl = ECON_EXPL["None feasible" if econ_initial == "None feasible" else econ_initial]
+_box(b_label, f"{b_rule}\n{b_expl}", b_tone)
 
 # -------------------------------
 # Section D — Operational Feasibility (deterministic, aligned with Excel)
@@ -281,9 +281,13 @@ with st.expander("Operational details (by quadrant)"):
     )
     st.markdown(details_md)
 
-# End-of-section colored box (D) — contains your explanation text
+# End-of-section colored box (D) — your explanation inside, with line breaks after periods
 d_label, d_sub, d_tone = badge_operational_label(econ_initial, d_status, S18, op_band)
-_box(d_label, OPER_EXPL[d_status], d_tone)
+d_expl = OPER_EXPL[d_status]
+# Guarantee ending period and line break structure
+if not d_sub.endswith("."):
+    d_sub = d_sub.rstrip() + "."
+_box(d_label, f"{d_sub}\n{d_expl}", d_tone)
 
 # -------------------------------
 # Section E — Environmental Leverage
@@ -298,7 +302,7 @@ d3.metric("Δ (Resale − Upcycling)", f"{env.delta_resale_minus_up:.2f}")
 env_band = cfg["environment_neutral_band"]
 delta_env = env.delta_resale_minus_up
 
-# Direction + relevance
+# Direction + relevance (two lines)
 direction_line = (
     "Upcycling has a lower environmental impact" if delta_env > 0
     else ("Resale has a lower environmental impact" if delta_env < 0 else "Same environmental impact")
@@ -310,19 +314,40 @@ relevance_line = (
     "Environmental impact is NOT decision-relevant under the current configuration."
 )
 
-# End-of-section colored box (E)
+# End-of-section colored box (E) — two lines
 e_label = "Environmental leverage applied" if relevance_applied else "Environmental neutral"
 e_tone  = "info"  # keep blue
-_box(e_label, f"{direction_line}. {relevance_line}", e_tone)
+_box(e_label, f"{direction_line}.\n{relevance_line}", e_tone)
 
 # -------------------------------
-# Section F — Model Recommendation (mirrors D for label; richer text)
+# Section F — Model Recommendation (mirrors D for color; adds trade-off note if needed)
 # -------------------------------
 st.subheader("Section F — Model Recommendation")
 
-f_label, f_sub, f_tone = badge_final_from_operational(d_status)
-_box(f_label, f_sub, f_tone)
-st.markdown(FINAL_LONG_TEXT[f_label])
+f_label, _, f_tone = badge_final_from_operational(d_status)
+
+# Determine if we must show the trade-off note:
+# - Chosen model from F (Resale/Upcycling)
+# - Lower-impact model from E (based on delta sign)
+chosen_model = None
+if f_label in ["Resale only", "Resale preferred"]:
+    chosen_model = "Resale"
+elif f_label in ["Upcycling only", "Upcycling preferred"]:
+    chosen_model = "Upcycling"
+
+env_lower = None
+if delta_env > 0:
+    env_lower = "Upcycling"
+elif delta_env < 0:
+    env_lower = "Resale"
+
+tradeoff_note = ""
+if chosen_model and env_lower and (chosen_model != env_lower):
+    tradeoff_note = "\nTrade-off between economic feasibility and environmental performance."
+
+# Final long text (your wording) + optional trade-off line, inside the colored box
+final_text = FINAL_LONG_TEXT[f_label] + tradeoff_note
+_box(f_label, final_text, f_tone)
 
 # -------------------------------
 # Decision trace — compact checklist
