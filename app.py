@@ -262,6 +262,20 @@ econ = compute_economic(inp, cfg)
 oper = compute_operational(category, segment, cfg)
 env  = compute_environment(category, segment, cfg)
 
+# --- DEBUG (temporary): verify engine delta rule when negatives appear ---
+with st.expander("DEBUG — Operational delta check (temporary)"):
+    st.write("Adjusted Resale Gap (P18):", oper.adjusted_resale_gap)
+    st.write("Adjusted Upcycling Gap (Q18):", oper.adjusted_upcycling_gap)
+
+    P18 = oper.adjusted_resale_gap
+    Q18 = oper.adjusted_upcycling_gap
+
+    delta_expected = (P18 + Q18) if (P18 < 0 or Q18 < 0) else (P18 - Q18)
+
+    st.write("Delta returned by engine:", oper.delta_resale_minus_up)
+    st.write("Delta expected (Excel rule):", round(delta_expected, 4))
+    st.write("Negatives trigger:", (P18 < 0 or Q18 < 0))
+    
 # -------------------------------
 # Section B — Economic Feasibility
 # -------------------------------
