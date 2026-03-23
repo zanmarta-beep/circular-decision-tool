@@ -91,50 +91,59 @@ def compute_economic(inputs: Inputs, cfg: Dict[str, Any]) -> EconomicResult:
 # -------------------------------
 def compute_operational(category: str, segment: str, cfg: Dict[str, Any], econ: EconomicResult) -> OperationalResult:
     """
-    Dynamic Operational Feasibility (Excel-aligned) for BOTH strategies:
+    Operational feasibility — Excel-aligned (dynamic for BOTH resale & upcycling)
 
     For each strategy s:
-      Gap_s   = Score_s = (Margin_s - Cost_s)
-      Avg_s   = (Margin_s + Score_s) / 2
-      SCR_s   = Avg_s / Cost_s
-      Coeff_s = SCR_s / (1 + SCR_s)
-      AdjGap_s = Gap_s * Coeff_s * ScaleContext
+      baseline_margin_s = baseline margin (NO product parameters)
+      score_s = margin_adjusted_s - cost_s
+      avg_s   = (baseline_margin_s + score_s) / 2
+      scr_s   = avg_s / cost_s
+      coeff_s = scr_s / (1 + scr_s)
+      adjusted_gap_s = score_s * coeff_s * scale_context
 
-    Delta (Resale − Up):
-      IF(OR(AdjUp < 0, AdjRes < 0), AdjRes + AdjUp, AdjRes − AdjUp)
+    Delta rule (Excel):
+      IF(OR(AdjUp < 0, AdjRes < 0), AdjRes + AdjUp, AdjRes - AdjUp)
 
-    Classification with ± operational_neutral_band.
+    Classification vs ± operational_neutral_band.
     """
     scale = cfg["operational"]["scale_context"][category][segment]
     band  = cfg["operational_neutral_band"]
 
-    # --- Resale ---
-    margin_r = econ.margin_resale
-    cost_r   = econ.cost_resale
-    gap_r    = econ.econ_score_resale  # = margin - cost (economic gap)
+    # --------------------
+    # RESALE (dynamic)
+    # --------------------
+    base_r = cfg["baseline_margin_resale"][category][segment]     # baseline (no product params)
+    cost_r = econ.cost_resale
+    score_r = econ.econ_score_resale                               # adjusted margin - cost (uses product params)
 
-    avg_r = (margin_r + gap_r) / 2.0
-    scr_r = avg_r / cost_r if cost_r != 0 else 0.0
-    coeff_r = scr_r / (1.0 + scr_r) if scr_r > -1 else 0.0  # safe guard
-    adj_r = gap_r * coeff_r * scale
+    avg_r = (base_r + score_r) / 2.0
+    scr_r = (avg_r / cost_r) if cost_r != 0 else 0.0
+    coeff_r = (scr_r / (1.0 + scr_r)) if (1.0 + scr_r) != 0 else 0.0
+    adj_r = score_r * coeff_r * scale
 
-    # --- Upcycling ---
-    margin_u = econ.margin_upcycling
-    cost_u   = econ.cost_upcycling
-    gap_u    = econ.econ_score_upcycling  # = margin - cost (economic gap)
+    # --------------------
+    # UPCYCLING (dynamic)
+    # --------------------
+    base_u = cfg["baseline_margin_upcycling"][category][segment]   # baseline (no product params)
+    cost_u = econ.cost_upcycling
+    score_u = econ.econ_score_upcycling                            # adjusted margin - cost (uses product params)
 
-    avg_u = (margin_u + gap_u) / 2.0
-    scr_u = avg_u / cost_u if cost_u != 0 else 0.0
-    coeff_u = scr_u / (1.0 + scr_u) if scr_u > -1 else 0.0
-    adj_u = gap_u * coeff_u * scale
+    avg_u = (base_u + score_u) / 2.0
+    scr_u = (avg_u / cost_u) if cost_u != 0 else 0.0
+    coeff_u = (scr_u / (1.0 + scr_u)) if (1.0 + scr_u) != 0 else 0.0
+    adj_u = score_u * coeff_u * scale
 
-    # --- Delta with your negative rule (Adjusted values!) ---
+    # --------------------
+    # DELTA (Excel rule with negatives)
+    # --------------------
     if (adj_r < 0) or (adj_u < 0):
         delta = adj_r + adj_u
     else:
         delta = adj_r - adj_u
 
-    # --- Neutral band classification ---
+    # --------------------
+    # Classification (band ±0.35)
+    # --------------------
     if abs(delta) <= band:
         tag = "Neutral"
     elif delta > band:
