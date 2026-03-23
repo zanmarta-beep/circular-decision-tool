@@ -89,36 +89,52 @@ def compute_economic(inputs: Inputs, cfg: Dict[str, Any]) -> EconomicResult:
 # -------------------------------
 # Operational block (Step D, deterministico)
 # -------------------------------
-def compute_operational(category: str, segment: str, cfg: Dict[str, Any]) -> OperationalResult:
+def compute_operational(category: str, segment: str, cfg: Dict[str, Any], econ: EconomicResult) -> OperationalResult:
     """
-    v0.2.x — Allineata a Excel:
+    Dynamic Operational Feasibility (Excel-aligned) for BOTH strategies:
 
-    Adjusted Resale Gap     = Resale Economic Gap × Scale Context
-    Adjusted Upcycling Gap  = Upcycling Adjusted Gap (base) × Scale Context
+    For each strategy s:
+      Gap_s   = Score_s = (Margin_s - Cost_s)
+      Avg_s   = (Margin_s + Score_s) / 2
+      SCR_s   = Avg_s / Cost_s
+      Coeff_s = SCR_s / (1 + SCR_s)
+      AdjGap_s = Gap_s * Coeff_s * ScaleContext
 
-    Δ operational (Resale − Up) =
-        IF(OR(AdjUp < 0, AdjRes < 0),  AdjRes + AdjUp,  AdjRes − AdjUp)
+    Delta (Resale − Up):
+      IF(OR(AdjUp < 0, AdjRes < 0), AdjRes + AdjUp, AdjRes − AdjUp)
 
     Classification with ± operational_neutral_band.
     """
-    node  = cfg["operational"]["matrix"][category][segment]
     scale = cfg["operational"]["scale_context"][category][segment]
     band  = cfg["operational_neutral_band"]
 
-    resale_econ_gap = node["resale"]["econ_gap"]          # e.g., 1.10
-    up_adj_gap_base = node["upcycling"]["adjusted_gap"]   # e.g., 0.13 (already adjusted in Excel)
+    # --- Resale ---
+    margin_r = econ.margin_resale
+    cost_r   = econ.cost_resale
+    gap_r    = econ.econ_score_resale  # = margin - cost (economic gap)
 
-    # Adjusted gaps
-    adj_resale = resale_econ_gap * scale
-    adj_up     = up_adj_gap_base * scale
+    avg_r = (margin_r + gap_r) / 2.0
+    scr_r = avg_r / cost_r if cost_r != 0 else 0.0
+    coeff_r = scr_r / (1.0 + scr_r) if scr_r > -1 else 0.0  # safe guard
+    adj_r = gap_r * coeff_r * scale
 
-    # Excel rule for delta when negatives appear
-    if (adj_resale < 0) or (adj_up < 0):
-        delta = adj_resale + adj_up
+    # --- Upcycling ---
+    margin_u = econ.margin_upcycling
+    cost_u   = econ.cost_upcycling
+    gap_u    = econ.econ_score_upcycling  # = margin - cost (economic gap)
+
+    avg_u = (margin_u + gap_u) / 2.0
+    scr_u = avg_u / cost_u if cost_u != 0 else 0.0
+    coeff_u = scr_u / (1.0 + scr_u) if scr_u > -1 else 0.0
+    adj_u = gap_u * coeff_u * scale
+
+    # --- Delta with your negative rule (Adjusted values!) ---
+    if (adj_r < 0) or (adj_u < 0):
+        delta = adj_r + adj_u
     else:
-        delta = adj_resale - adj_up
+        delta = adj_r - adj_u
 
-    # Neutral band classification
+    # --- Neutral band classification ---
     if abs(delta) <= band:
         tag = "Neutral"
     elif delta > band:
@@ -127,8 +143,8 @@ def compute_operational(category: str, segment: str, cfg: Dict[str, Any]) -> Ope
         tag = "Preference upcycling"
 
     return OperationalResult(
-        adjusted_resale_gap=round(adj_resale, 4),
-        adjusted_upcycling_gap=round(adj_up, 4),
+        adjusted_resale_gap=round(adj_r, 4),
+        adjusted_upcycling_gap=round(adj_u, 4),
         delta_resale_minus_up=round(delta, 4),
         tag=tag
     )
