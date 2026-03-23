@@ -261,24 +261,24 @@ inp  = Inputs(
 econ = compute_economic(inp, cfg)
 oper = compute_operational(category, segment, cfg, econ)
 
-with st.expander("DEBUG — SCR and coeff (temporary)"):
+with st.expander("DEBUG — SCR & coeff (temporary)"):
+    base_r = cfg["baseline_margin_resale"][category][segment]
+    base_u = cfg["baseline_margin_upcycling"][category][segment]
     scale = cfg["operational"]["scale_context"][category][segment]
 
-    # resale
-    gap_r = econ.econ_score_resale
-    avg_r = (econ.margin_resale + gap_r)/2
+    score_r = econ.econ_score_resale
+    avg_r = (base_r + score_r)/2
     scr_r = avg_r / econ.cost_resale
     coeff_r = scr_r / (1 + scr_r)
 
-    # upcycling
-    gap_u = econ.econ_score_upcycling
-    avg_u = (econ.margin_upcycling + gap_u)/2
+    score_u = econ.econ_score_upcycling
+    avg_u = (base_u + score_u)/2
     scr_u = avg_u / econ.cost_upcycling
     coeff_u = scr_u / (1 + scr_u)
 
     st.write("Scale context:", scale)
-    st.write("Resale → gap, avg, SCR, coeff:", gap_r, avg_r, scr_r, coeff_r)
-    st.write("Upcycling → gap, avg, SCR, coeff:", gap_u, avg_u, scr_u, coeff_u)
+    st.write("Resale -> base, score, avg, SCR, coeff:", base_r, score_r, avg_r, scr_r, coeff_r)
+    st.write("Upcycling -> base, score, avg, SCR, coeff:", base_u, score_u, avg_u, scr_u, coeff_u)
 
 env  = compute_environment(category, segment, cfg)
 
