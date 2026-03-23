@@ -92,6 +92,44 @@ def _status_pill(ok: bool, ok_text: str = "PASS", ko_text: str = "FAIL"):
         unsafe_allow_html=True
     )
 
+# --- Environmental “lower is better” pill (under each impact metric) ---
+def _env_pill(is_lower: bool | None):
+    """
+    Pill to indicate environmental desirability:
+      - True  -> ✓ Lower (better)  [green]
+      - False -> ✗ Higher (worse)  [red]
+      - None  -> = Equal           [grey]
+    """
+    if is_lower is None:
+        # equal
+        color = "#4B5563"  # gray-600
+        bg    = "#4B55631A"
+        text  = "= Equal"
+    elif is_lower:
+        color = "#16a34a"  # green-600
+        bg    = "#16a34a1A"
+        text  = "✓ Lower (better)"
+    else:
+        color = "#dc2626"  # red-600
+        bg    = "#dc26261A"
+        text  = "✗ Higher (worse)"
+
+    st.markdown(
+        f"""
+        <span style="
+            display:inline-block;
+            padding:.15rem .55rem;
+            border-radius:999px;
+            background:{bg};
+            color:{color};
+            font-weight:600;
+            font-size:0.80rem;">
+            {text}
+        </span>
+        """,
+        unsafe_allow_html=True
+    )
+
 # --- Exact explanatory texts (B, D) with punctuation ---
 ECON_EXPL = {
     "Resale only":    "Only resale passes the economic feasibility threshold.",
@@ -320,15 +358,33 @@ _box(d_label, d_expl, d_tone)
 # -------------------------------
 st.subheader("Section E — Environmental Leverage")
 
+# 3 metriche come prima
 d1, d2, d3 = st.columns(3)
 d1.metric("Impact Resale (↓ is better)", f"{env.env_resale:.2f}")
 d2.metric("Impact Upcycling (↓ is better)", f"{env.env_upcycling:.2f}")
 d3.metric("Δ (Resale − Upcycling)", f"{env.delta_resale_minus_up:.2f}")
 
+# NEW: pill “lower is better” sotto i due impatti
+with d1:
+    if env.env_resale < env.env_upcycling:
+        _env_pill(True)
+    elif env.env_resale > env.env_upcycling:
+        _env_pill(False)
+    else:
+        _env_pill(None)
+
+with d2:
+    if env.env_upcycling < env.env_resale:
+        _env_pill(True)
+    elif env.env_upcycling > env.env_resale:
+        _env_pill(False)
+    else:
+        _env_pill(None)
+
+# Il resto della sezione E resta identico (direction + relevance nel box)
 env_band = cfg["environment_neutral_band"]
 delta_env = env.delta_resale_minus_up
 
-# Direction + relevance (two lines)
 direction_line = (
     "Upcycling has a lower environmental impact" if delta_env > 0
     else ("Resale has a lower environmental impact" if delta_env < 0 else "Same environmental impact")
@@ -340,7 +396,6 @@ relevance_line = (
     "Environmental impact is NOT decision-relevant under the current configuration."
 )
 
-# End-of-section HTML box (E) — two lines, aligned
 e_label = "Environmental leverage applied" if relevance_applied else "Environmental neutral"
 _box(e_label, f"{direction_line}.\n{relevance_line}", "info")
 
