@@ -91,28 +91,34 @@ def compute_economic(inputs: Inputs, cfg: Dict[str, Any]) -> EconomicResult:
 # -------------------------------
 def compute_operational(category: str, segment: str, cfg: Dict[str, Any]) -> OperationalResult:
     """
-    v0.2 — Allineata a Excel:
+    v0.2.x — Allineata a Excel:
 
     Adjusted Resale Gap     = Resale Economic Gap × Scale Context
-    Adjusted Upcycling Gap  = (Adjusted Upcycling Gap da tabella) × Scale Context
-    Δ operativo             = (Resale Economic Gap − Adjusted Upcycling Gap base) × Scale Context
+    Adjusted Upcycling Gap  = Upcycling Adjusted Gap (base) × Scale Context
 
-    Classificazione con banda ± operational_neutral_band.
+    Δ operational (Resale − Up) =
+        IF(OR(AdjUp < 0, AdjRes < 0),  AdjRes + AdjUp,  AdjRes − AdjUp)
+
+    Classification with ± operational_neutral_band.
     """
     node  = cfg["operational"]["matrix"][category][segment]
     scale = cfg["operational"]["scale_context"][category][segment]
     band  = cfg["operational_neutral_band"]
 
-    # Valori di partenza dalla matrice operativa
-    resale_econ_gap = node["resale"]["econ_gap"]          # es. 1.10
-    up_adj_gap_base = node["upcycling"]["adjusted_gap"]   # es. 0.13  (già "adjusted" lato upcycling)
+    resale_econ_gap = node["resale"]["econ_gap"]          # e.g., 1.10
+    up_adj_gap_base = node["upcycling"]["adjusted_gap"]   # e.g., 0.13 (already adjusted in Excel)
 
-    # Calcoli allineati a Excel
-    adj_resale = resale_econ_gap * scale                  # es. 1.10 * 0.85 = 0.93
-    adj_up     = up_adj_gap_base * scale                  # es. 0.13 * 0.85 = 0.11
-    delta      = (resale_econ_gap - up_adj_gap_base) * scale  # es. 0.82
+    # Adjusted gaps
+    adj_resale = resale_econ_gap * scale
+    adj_up     = up_adj_gap_base * scale
 
-    # Banda di neutralità
+    # Excel rule for delta when negatives appear
+    if (adj_resale < 0) or (adj_up < 0):
+        delta = adj_resale + adj_up
+    else:
+        delta = adj_resale - adj_up
+
+    # Neutral band classification
     if abs(delta) <= band:
         tag = "Neutral"
     elif delta > band:
@@ -126,7 +132,6 @@ def compute_operational(category: str, segment: str, cfg: Dict[str, Any]) -> Ope
         delta_resale_minus_up=round(delta, 4),
         tag=tag
     )
-
 # -------------------------------
 # Environmental block (Step E)
 # -------------------------------
