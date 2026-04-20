@@ -96,8 +96,8 @@ def _status_pill(ok: bool, ok_text: str = "PASS", ko_text: str = "FAIL"):
 def _env_pill(is_lower: bool | None):
     """
     Pill to indicate environmental desirability:
-      - True  -> ✓ Lower (better)  [green]
-      - False -> ✗ Higher (worse)  [red]
+      - True  -> ✓ Lower  (better) [green]
+      - False -> ✗ Higher (worse) [red]
       - None  -> = Equal           [grey]
     """
     if is_lower is None:
@@ -108,11 +108,11 @@ def _env_pill(is_lower: bool | None):
     elif is_lower:
         color = "#16a34a"  # green-600
         bg    = "#16a34a1A"
-        text  = "✓ Lower (better)"
+        text  = "✓ Lower"
     else:
         color = "#dc2626"  # red-600
         bg    = "#dc26261A"
-        text  = "✗ Higher (worse)"
+        text  = "✗ Higher"
 
     st.markdown(
         f"""
