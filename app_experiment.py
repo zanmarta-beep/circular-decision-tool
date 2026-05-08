@@ -454,7 +454,7 @@ if not run:
     st.markdown("""
 <div style="margin-top:2rem; padding:24px 28px; background:#fff; border:1px solid #E2E8F0;
      border-radius:12px; color:#64748B; font-size:0.9rem; line-height:1.6;">
-  <strong style="color:#1E293B; font-family:'Cormorant Garamond',serif; font-size:1.1rem;">
+  <strong style="color:#1E293B; font-size:1.1rem; font-weight:700; font-family:'DM Sans',sans-serif;">
     Welcome to the Circular Strategy Advisor
   </strong><br>
   Configure the product parameters in the sidebar on the left, then click <strong>Run assessment</strong>
