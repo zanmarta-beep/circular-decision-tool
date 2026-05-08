@@ -461,12 +461,12 @@ with c1:
 with c2:
     _metric_card("Cost — Resale", f"{econ.cost_resale:.2f}", "resale")
 with c3:
-_metric_card(
+    _metric_card(
     "Score Resale (margin − cost)",
     f"{econ.econ_score_resale:.2f}",
     "resale",
     pill_html=_status_pill_inline_html(econ.feasible_resale)
-)
+    )
 
 with gap:
     st.markdown('<div style="height:56px;border-left:1px dashed #E2E8F0;margin:0 auto;width:1px;"></div>', unsafe_allow_html=True)
@@ -476,12 +476,12 @@ with c4:
 with c5:
     _metric_card("Cost — Upcycling", f"{econ.cost_upcycling:.2f}", "up")
 with c6:
-_metric_card(
+    _metric_card(
     "Score Upcycling (margin − cost)",
     f"{econ.econ_score_upcycling:.2f}",
     "up",
     pill_html=_status_pill_inline_html(econ.feasible_upcycling)
-)
+    )
 
 # Econ outcome
 if econ.feasible_resale and econ.feasible_upcycling:
