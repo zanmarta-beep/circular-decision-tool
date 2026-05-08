@@ -22,9 +22,9 @@ st.markdown("""
   --resale:        #3730A3;   /* indigo-700  */
   --resale-light:  #EEF2FF;   /* indigo-50   */
   --resale-mid:    #818CF8;   /* indigo-400  */
-  --up:            #B45309;   /* amber-700   */
-  --up-light:      #FFFBEB;   /* amber-50    */
-  --up-mid:        #F59E0B;   /* amber-400   */
+  --up:            #7A1E2C;   /* bordeaux  */
+  --up-light:      #FDF2F4;   /* bordeaux-50-ish  */
+  --up-mid:        #C9485B;   /* ordeaux mid   */
   --neutral:       #1E293B;   /* slate-800   */
   --surface:       #F8FAFC;   /* slate-50    */
   --border:        #E2E8F0;   /* slate-200   */
