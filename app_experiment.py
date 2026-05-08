@@ -1,4 +1,4 @@
-# app_experiment.py (v0.3.1) — Musthad-inspired UI: Plus Jakarta Sans, Resale=Indigo, Upcycling=Bordeaux
+# app.py (v0.3.0) — Redesigned UI: luxury editorial, Resale=Indigo, Upcycling=Amber
 import json
 import re
 import streamlit as st
@@ -10,65 +10,56 @@ from engine import (
 # ─────────────────────────────────────────────
 # PAGE CONFIG + GLOBAL CSS
 # ─────────────────────────────────────────────
-st.set_page_config(page_title="Circular Strategy Advisor — Experimental", layout="wide")
+st.set_page_config(page_title="Circular Strategy Advisor", layout="wide")
 
 st.markdown("""
 <style>
-/* ── Google Font ── */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+/* ── Google Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 /* ── Root palette ── */
 :root {
-  --resale:        #3730A3;   /* indigo-700 */
-  --resale-light:  #EEF2FF;   /* indigo-50  */
-  --resale-mid:    #818CF8;   /* indigo-400 */
-
-  /* Bordeaux palette */
-  --up:            #7A1E2C;   /* bordeaux */
-  --up-light:      #FDF2F4;   /* soft bordeaux tint */
-  --up-mid:        #C9485B;   /* mid bordeaux */
-
-  --neutral:       #0F172A;   /* slate-900 */
-  --surface:       #F8FAFC;   /* slate-50  */
-  --border:        #E2E8F0;   /* slate-200 */
-  --text-muted:    #64748B;   /* slate-500 */
+  --resale:        #3730A3;   /* indigo-700  */
+  --resale-light:  #EEF2FF;   /* indigo-50   */
+  --resale-mid:    #818CF8;   /* indigo-400  */
+  --up:            #B45309;   /* amber-700   */
+  --up-light:      #FFFBEB;   /* amber-50    */
+  --up-mid:        #F59E0B;   /* amber-400   */
+  --neutral:       #1E293B;   /* slate-800   */
+  --surface:       #F8FAFC;   /* slate-50    */
+  --border:        #E2E8F0;   /* slate-200   */
+  --text-muted:    #64748B;   /* slate-500   */
   --green:         #15803D;
   --green-bg:      #F0FDF4;
   --red:           #B91C1C;
   --red-bg:        #FEF2F2;
-  --gray:          #475569;
-  --gray-bg:       #F1F5F9;
 }
 
 /* ── Base font override ── */
 html, body, [class*="css"] {
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-family: 'DM Sans', sans-serif !important;
   color: var(--neutral);
 }
 
 /* ── App background ── */
 .stApp { background: var(--surface); }
 
-/* ── Sidebar ── */
-[data-testid="stSidebar"] {
-  background: #fff;
-  border-right: 1px solid var(--border);
-}
-
 /* ── Title block ── */
 .csa-title {
-  font-size: 2.25rem;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.6rem;
   font-weight: 700;
-  letter-spacing: -0.6px;
-  line-height: 1.12;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
   color: var(--neutral);
   margin-bottom: 0.15rem;
 }
 .csa-subtitle {
-  font-size: 0.86rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
   color: var(--text-muted);
-  font-weight: 500;
-  letter-spacing: 0.06em;
+  font-weight: 400;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -77,23 +68,25 @@ html, body, [class*="css"] {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 2.0rem 0 0.9rem 0;
-  padding-bottom: 0.55rem;
+  margin: 2.2rem 0 0.9rem 0;
+  padding-bottom: 0.5rem;
   border-bottom: 2px solid var(--border);
 }
 .section-badge {
+  font-family: 'DM Sans', sans-serif;
   font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 3px 10px;
-  border-radius: 6px;
+  padding: 3px 9px;
+  border-radius: 4px;
   background: var(--neutral);
   color: #fff;
 }
 .section-title {
-  font-size: 1.18rem;
-  font-weight: 700;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.35rem;
+  font-weight: 600;
   color: var(--neutral);
 }
 
@@ -101,22 +94,22 @@ html, body, [class*="css"] {
 .metric-card {
   background: #fff;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 14px 16px 12px;
   position: relative;
-  overflow: hidden;
 }
 .metric-label {
-  font-size: 0.70rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.07em;
   color: var(--text-muted);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .metric-value {
-  font-size: 1.65rem;
-  font-weight: 750;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.9rem;
+  font-weight: 700;
   line-height: 1;
 }
 .metric-resale  { border-top: 3px solid var(--resale); }
@@ -126,33 +119,19 @@ html, body, [class*="css"] {
 .metric-up      .metric-value { color: var(--up); }
 .metric-neutral .metric-value { color: var(--neutral); }
 
-/* ── Pill inside metric card (top-right) ── */
-.pill-inline {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  margin-top: 0;
-  font-size: 0.72rem;
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-}
-
-/* ── Legend chips ── */
+/* ── Color legend chips ── */
 .legend-row {
   display: flex;
   gap: 18px;
-  margin: 0.2rem 0 1rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
 }
 .legend-chip {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 500;
   color: var(--text-muted);
 }
 .legend-dot {
@@ -165,50 +144,71 @@ html, body, [class*="css"] {
 .section-divider {
   border: none;
   border-top: 1px dashed var(--border);
-  margin: 1.6rem 0;
+  margin: 1.8rem 0;
 }
 
 /* ── Output hero box ── */
 .hero-box {
   border-radius: 12px;
-  padding: 18px 20px;
+  padding: 20px 22px;
   margin-top: 1rem;
   border-left: 5px solid;
 }
 .hero-box-label {
-  font-size: 1.05rem;
-  font-weight: 800;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.25rem;
+  font-weight: 700;
   margin-bottom: 6px;
 }
 .hero-box-body {
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   line-height: 1.55;
   white-space: pre-line;
 }
 
-/* hero variants */
+/* hero color variants */
 .hero-resale  { background: var(--resale-light); border-color: var(--resale); color: #1e1b4b; }
-.hero-up      { background: var(--up-light);     border-color: var(--up);     color: #3f0d16; }
+.hero-up      { background: var(--up-light);     border-color: var(--up);     color: #451a03; }
 .hero-info    { background: #F0F9FF; border-color: #38BDF8; color: #0C4A6E; }
 .hero-success { background: var(--green-bg); border-color: var(--green); color: #14532D; }
 .hero-error   { background: var(--red-bg);   border-color: var(--red);   color: #7F1D1D; }
 
-/* ── Final box ── */
+/* ── Final recommendation box (F) — bigger ── */
 .final-box {
   border-radius: 14px;
-  padding: 22px 26px;
-  margin-top: 1.1rem;
+  padding: 24px 28px;
+  margin-top: 1.2rem;
   border-left: 6px solid;
 }
 .final-box-label {
-  font-size: 1.35rem;
-  font-weight: 900;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.55rem;
+  font-weight: 700;
   margin-bottom: 8px;
 }
 .final-box-body {
-  font-size: 0.96rem;
+  font-size: 0.95rem;
   line-height: 1.6;
-  white-space: pre-line;
+}
+
+/* ── Pill ── */
+.pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+/* ── Sidebar tweaks ── */
+[data-testid="stSidebar"] {
+  background: #fff;
+  border-right: 1px solid var(--border);
+}
+[data-testid="stSidebar"] .stSelectbox label,
+[data-testid="stSidebar"] h2 {
+  font-family: 'DM Sans', sans-serif !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -219,7 +219,6 @@ html, body, [class*="css"] {
 Tone = Literal["success", "info", "warn", "error", "resale", "upcycling"]
 
 def _nl(text: str) -> str:
-    """Newline after punctuation + remove indentation; keep existing newlines."""
     if not text:
         return ""
     s = text.replace("\r\n", "\n").replace("\r", "\n")
@@ -230,18 +229,8 @@ def _nl(text: str) -> str:
     s = re.sub(r'\n{3,}', '\n\n', s)
     return s.strip()
 
-def _section(badge: str, title: str):
-    st.markdown(f"""
-<div class="section-header">
-  <span class="section-badge">{badge}</span>
-  <span class="section-title">{title}</span>
-</div>
-""", unsafe_allow_html=True)
-
-def _divider():
-    st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
-
 def _hero(label: str, body: str, variant: str):
+    """Colored hero output box. variant in: resale, up, info, success, error"""
     body_fmt = _nl(body)
     st.markdown(f"""
 <div class="hero-box hero-{variant}">
@@ -259,47 +248,60 @@ def _final_box(label: str, body: str, variant: str):
 </div>
 """, unsafe_allow_html=True)
 
-def _pill_inline_html(text: str, color: str, bg: str) -> str:
-    """Return HTML for a pill that sits inside a metric card (top-right)."""
-    return f"""<span class="pill-inline" style="color:{color};background:{bg};">{text}</span>"""
+def _section(badge: str, title: str):
+    st.markdown(f"""
+<div class="section-header">
+  <span class="section-badge">{badge}</span>
+  <span class="section-title">{title}</span>
+</div>
+""", unsafe_allow_html=True)
 
-def _status_pill_inline_html(ok: bool) -> str:
-    if ok:
-        return _pill_inline_html("✓ PASS", "#15803D", "#F0FDF4")
-    return _pill_inline_html("✗ FAIL", "#B91C1C", "#FEF2F2")
-
-def _env_pill_inline_html(is_lower) -> str:
-    if is_lower is None:
-        return _pill_inline_html("= Equal", "var(--gray)", "var(--gray-bg)")
-    if is_lower:
-        return _pill_inline_html("✓ Lower impact", "#15803D", "#F0FDF4")
-    return _pill_inline_html("✗ Higher impact", "#B91C1C", "#FEF2F2")
-
-def _metric_card(label: str, value: str, variant: str = "neutral", pill_html: str = ""):
+def _metric_card(label: str, value: str, variant: str = "neutral"):
     st.markdown(f"""
 <div class="metric-card metric-{variant}">
-  {pill_html}
   <div class="metric-label">{label}</div>
   <div class="metric-value">{value}</div>
 </div>
 """, unsafe_allow_html=True)
+
+def _pill(text: str, color: str, bg: str):
+    st.markdown(f"""
+<span class="pill" style="color:{color};background:{bg};">{text}</span>
+""", unsafe_allow_html=True)
+
+def _status_pill(ok: bool):
+    if ok:
+        _pill("✓ PASS", "#15803D", "#F0FDF4")
+    else:
+        _pill("✗ FAIL", "#B91C1C", "#FEF2F2")
+
+def _env_pill(is_lower):
+    if is_lower is None:
+        _pill("= Equal", "#4B5563", "#F1F5F9")
+    elif is_lower:
+        _pill("✓ Lower impact", "#15803D", "#F0FDF4")
+    else:
+        _pill("✗ Higher impact", "#B91C1C", "#FEF2F2")
 
 def _legend():
     st.markdown("""
 <div class="legend-row">
   <div class="legend-chip">
     <div class="legend-dot" style="background:#3730A3;"></div>
-    <span>🧥 Resale</span>
+    <span>Resale</span>
   </div>
   <div class="legend-chip">
-    <div class="legend-dot" style="background:#7A1E2C;"></div>
-    <span>♻️ Upcycling</span>
+    <div class="legend-dot" style="background:#B45309;"></div>
+    <span>Upcycling</span>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
+def _divider():
+    st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
+
 # ─────────────────────────────────────────────
-# OUTCOME TEXTS (same as your stable logic)
+# OUTCOME LOGIC HELPERS (unchanged from v0.2.8)
 # ─────────────────────────────────────────────
 ECON_EXPL = {
     "Resale only":    "Only resale passes the economic feasibility threshold.",
@@ -337,8 +339,8 @@ FINAL_LONG_TEXT = {
         "No dominant circular configuration emerges. "
         "Resale and upcycling can coexist strategically, enabling flexibility in value capture across different product subsets."
     ),
-    "Resale only":     "Only resale is economically sustainable.",
-    "Upcycling only":  "Only upcycling is economically sustainable.",
+    "Resale only":    "Only resale is economically sustainable.",
+    "Upcycling only": "Only upcycling is economically sustainable.",
     "✗ None feasible": "Neither model is economically viable under current assumptions."
 }
 
@@ -349,7 +351,7 @@ def _econ_variant(econ_initial: str) -> str:
     return "error"
 
 def _oper_variant(d_status: str) -> str:
-    if d_status in ["Resale only", "Resale preferred"]:       return "resale"
+    if d_status in ["Resale only", "Resale preferred"]:    return "resale"
     if d_status in ["Upcycling only", "Upcycling preferred"]: return "up"
     if d_status == "None feasible": return "error"
     return "info"
@@ -374,7 +376,7 @@ with open("config.json", "r", encoding="utf-8") as f:
     cfg = json.load(f)
 
 # ─────────────────────────────────────────────
-# SIDEBAR — Section A
+# SIDEBAR — Section A (unchanged layout, styled font)
 # ─────────────────────────────────────────────
 with st.sidebar:
     st.header("Section A — Inputs")
@@ -399,17 +401,19 @@ with st.sidebar:
 st.markdown("""
 <div style="padding: 1rem 0 0.5rem 0;">
   <div class="csa-title">Circular Strategy Advisor</div>
-  <div class="csa-subtitle">Experimental UI · Resale vs Upcycling</div>
+  <div class="csa-subtitle">Decision-support tool · Resale vs Upcycling</div>
 </div>
 """, unsafe_allow_html=True)
 
 if not run:
     st.markdown("""
-<div style="margin-top:2rem; padding:22px 26px; background:#fff; border:1px solid #E2E8F0;
-     border-radius:12px; color:#64748B; font-size:0.92rem; line-height:1.6;">
-  <strong style="color:#0F172A; font-size:1.05rem;">Welcome</strong><br>
-  Configure the product parameters in the left sidebar, then click <strong>Run assessment</strong>
-  to generate the economic, operational and environmental analysis.
+<div style="margin-top:2rem; padding:24px 28px; background:#fff; border:1px solid #E2E8F0;
+     border-radius:12px; color:#64748B; font-size:0.9rem; line-height:1.6;">
+  <strong style="color:#1E293B; font-family:'Cormorant Garamond',serif; font-size:1.1rem;">
+    Welcome to the Circular Strategy Advisor
+  </strong><br>
+  Configure the product parameters in the sidebar on the left, then click <strong>Run assessment</strong>
+  to generate the full economic, operational and environmental analysis.
 </div>
 """, unsafe_allow_html=True)
     st.stop()
@@ -437,25 +441,23 @@ _legend()
 c1, c2, c3, gap, c4, c5, c6 = st.columns([1.2, 1.2, 1.4, 0.15, 1.2, 1.2, 1.4])
 
 with c1:
-    _metric_card("Margin — 🧥 Resale", f"{econ.margin_resale:.2f}", "resale")
+    _metric_card("Margin — Resale", f"{econ.margin_resale:.2f}", "resale")
 with c2:
-    _metric_card("Cost — 🧥 Resale", f"{econ.cost_resale:.2f}", "resale")
-
+    _metric_card("Cost — Resale", f"{econ.cost_resale:.2f}", "resale")
 with c3:
-    pill = _status_pill_inline_html(econ.feasible_resale)
-    _metric_card("Score — 🧥 Resale (margin − cost)", f"{econ.econ_score_resale:.2f}", "resale", pill_html=pill)
+    _metric_card("Score Resale (margin − cost)", f"{econ.econ_score_resale:.2f}", "resale")
+    _status_pill(econ.feasible_resale)
 
 with gap:
     st.markdown('<div style="height:56px;border-left:1px dashed #E2E8F0;margin:0 auto;width:1px;"></div>', unsafe_allow_html=True)
 
 with c4:
-    _metric_card("Margin — ♻️ Upcycling", f"{econ.margin_upcycling:.2f}", "up")
+    _metric_card("Margin — Upcycling", f"{econ.margin_upcycling:.2f}", "up")
 with c5:
-    _metric_card("Cost — ♻️ Upcycling", f"{econ.cost_upcycling:.2f}", "up")
-
+    _metric_card("Cost — Upcycling", f"{econ.cost_upcycling:.2f}", "up")
 with c6:
-    pill = _status_pill_inline_html(econ.feasible_upcycling)
-    _metric_card("Score — ♻️ Upcycling (margin − cost)", f"{econ.econ_score_upcycling:.2f}", "up", pill_html=pill)
+    _metric_card("Score Upcycling (margin − cost)", f"{econ.econ_score_upcycling:.2f}", "up")
+    _status_pill(econ.feasible_upcycling)
 
 # Econ outcome
 if econ.feasible_resale and econ.feasible_upcycling:
@@ -500,9 +502,9 @@ else:
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    _metric_card("Adjusted 🧥 Resale Gap", f"{oper.adjusted_resale_gap:.2f}", "resale")
+    _metric_card("Adjusted Resale Gap", f"{oper.adjusted_resale_gap:.2f}", "resale")
 with col2:
-    _metric_card("Adjusted ♻️ Upcycling Gap", f"{oper.adjusted_upcycling_gap:.2f}", "up")
+    _metric_card("Adjusted Upcycling Gap", f"{oper.adjusted_upcycling_gap:.2f}", "up")
 with col3:
     _metric_card("Δ operational (Resale − Upcycling)", f"{S18:.2f}", "neutral")
 
@@ -523,3 +525,90 @@ with st.expander("Operational details (by quadrant)"):
         adj_up=f"{oper.adjusted_upcycling_gap:.2f}",
     ))
 
+d_label   = "✗ None feasible" if d_status == "None feasible" else d_status
+d_expl    = OPER_EXPL[d_status]
+d_variant = _oper_variant(d_status)
+_hero(d_label, d_expl, d_variant)
+_divider()
+
+# ─────────────────────────────────────────────
+# SECTION E — Environmental Leverage
+# ─────────────────────────────────────────────
+_section("E", "Environmental Leverage")
+
+d1, d2, d3 = st.columns(3)
+with d1:
+    _metric_card("Impact Resale  (↓ better)", f"{env.env_resale:.2f}", "resale")
+    if env.env_resale < env.env_upcycling:
+        _env_pill(True)
+    elif env.env_resale > env.env_upcycling:
+        _env_pill(False)
+    else:
+        _env_pill(None)
+
+with d2:
+    _metric_card("Impact Upcycling  (↓ better)", f"{env.env_upcycling:.2f}", "up")
+    if env.env_upcycling < env.env_resale:
+        _env_pill(True)
+    elif env.env_upcycling > env.env_resale:
+        _env_pill(False)
+    else:
+        _env_pill(None)
+
+with d3:
+    _metric_card("Δ (Resale − Upcycling)", f"{env.delta_resale_minus_up:.2f}", "neutral")
+
+env_band = cfg["environment_neutral_band"]
+delta_env = env.delta_resale_minus_up
+
+direction_line = (
+    "Upcycling has a lower environmental impact" if delta_env > 0
+    else ("Resale has a lower environmental impact" if delta_env < 0 else "Same environmental impact")
+)
+relevance_applied = abs(delta_env) > env_band
+relevance_line = (
+    "Environmental performance is relevant under the current configuration."
+    if relevance_applied else
+    "Environmental impact is NOT decision-relevant under the current configuration."
+)
+e_label = "Environmental leverage applied" if relevance_applied else "Environmental neutral"
+_hero(e_label, f"{direction_line}.\n{relevance_line}", "info")
+_divider()
+
+# ─────────────────────────────────────────────
+# SECTION F — Final Recommendation
+# ─────────────────────────────────────────────
+_section("F", "Model Recommendation")
+
+f_label   = badge_final_from_operational(d_status)
+f_variant = _final_variant(f_label)
+
+# Trade-off note
+chosen_model = None
+if f_label in ["Resale only", "Resale preferred"]:       chosen_model = "Resale"
+elif f_label in ["Upcycling only", "Upcycling preferred"]: chosen_model = "Upcycling"
+
+env_lower = "Upcycling" if delta_env > 0 else ("Resale" if delta_env < 0 else None)
+tradeoff_note = ""
+if chosen_model and env_lower and chosen_model != env_lower:
+    tradeoff_note = "⚠ Trade-off between economic feasibility and environmental performance."
+
+final_text = FINAL_LONG_TEXT[f_label]
+if tradeoff_note:
+    if not final_text.strip().endswith("."):
+        final_text = final_text.strip() + "."
+    final_text = f"{final_text}\n\n{tradeoff_note}"
+
+_final_box(f_label, final_text, f_variant)
+
+# ─────────────────────────────────────────────
+# DECISION TRACE
+# ─────────────────────────────────────────────
+st.markdown('<div style="margin-top:1.5rem;"></div>', unsafe_allow_html=True)
+with st.expander("Decision trace"):
+    econ_check = "✓" if econ_initial != "None feasible" else "✗"
+    scal_check = "✓" if d_status in ["Resale preferred", "Upcycling preferred", "Neutral", "Resale only", "Upcycling only"] else "✗"
+    env_label  = "Environmental leverage applied" if relevance_applied else "Environmental neutral"
+    st.write(f"- **Economic feasibility** {econ_check}")
+    st.write(f"- **Scalability** {scal_check}")
+    st.write(f"- **{env_label}**")
