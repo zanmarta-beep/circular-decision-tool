@@ -1,4 +1,4 @@
-# app.py (v0.3.0) — Redesigned UI: luxury editorial, Resale=Indigo, Upcycling=Bordeaux
+# app.py (v0.3.0) — Redesigned UI: luxury editorial, Resale=Indigo, Upcycling=Gold
 import json
 import re
 import streamlit as st
@@ -23,9 +23,9 @@ st.markdown("""
   --resale-light:  #EEF2FF;   /* indigo-50   */
   --resale-mid:    #818CF8;   /* indigo-400  */
 
-  --up:            #7A1E2C;   /* bordeaux */
-  --up-light:      #FDF2F4;   /* bordeaux-50-ish */
-  --up-mid:        #C9485B;   /* bordeaux mid */
+  --up:            #C98A00;   /* mustard/gold */
+  --up-light:      #FFF5D6;   /* light gold */
+  --up-mid:        #E2A400;   /* mid gold */
 
   --neutral:       #1E293B;   /* slate-800   */
   --surface:       #F8FAFC;   /* slate-50    */
@@ -536,9 +536,9 @@ _hero(b_label, f"{b_rule}\n{b_expl}", b_variant)
 _divider()
 
 # ─────────────────────────────────────────────
-# SECTION D — Operational Feasibility
+# SECTION C — Operational Feasibility
 # ─────────────────────────────────────────────
-_section("D", "Operational Feasibility")
+_section("C", "Operational Feasibility")
 
 S18     = oper.delta_resale_minus_up
 op_band = cfg["operational_neutral_band"]
@@ -585,9 +585,9 @@ _hero(d_label, d_expl, d_variant)
 _divider()
 
 # ─────────────────────────────────────────────
-# SECTION E — Environmental Leverage
+# SECTION D — Environmental Leverage
 # ─────────────────────────────────────────────
-_section("E", "Environmental Leverage")
+_section("D", "Environmental Leverage")
 
 d1, d2, d3 = st.columns(3)
 with d1:
@@ -629,9 +629,9 @@ _hero(e_label, f"{direction_line}.\n{relevance_line}", "info")
 _divider()
 
 # ─────────────────────────────────────────────
-# SECTION F — Final Recommendation
+# SECTION E — Final Recommendation
 # ─────────────────────────────────────────────
-_section("F", "Model Recommendation")
+_section("E", "Model Recommendation")
 
 f_label   = badge_final_from_operational(d_status)
 f_variant = _final_variant(f_label)
