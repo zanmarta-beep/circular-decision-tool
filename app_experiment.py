@@ -535,3 +535,128 @@ _divider()
 # ─────────────────────────────────────────────
 _section("D", "Operational Feasibility")
 
+S18     = oper.delta_resale_minus_up
+op_band = cfg["operational_neutral_band"]
+
+if econ_initial in ["Resale only", "Upcycling only", "None feasible"]:
+    d_status = econ_initial
+else:
+    if S18 > op_band:
+        d_status = "Resale preferred"
+    elif S18 < -op_band:
+        d_status = "Upcycling preferred"
+    else:
+        d_status = "Neutral"
+
+col1, col2, col3 = st.columns(3)
+with col1:
+    _metric_card("Adjusted Resale Gap", f"{oper.adjusted_resale_gap:.2f}", "resale")
+with col2:
+    _metric_card("Adjusted Upcycling Gap", f"{oper.adjusted_upcycling_gap:.2f}", "up")
+with col3:
+    _metric_card("Δ operational (Resale − Upcycling)", f"{S18:.2f}", "neutral")
+
+with st.expander("Operational details (by quadrant)"):
+    st.caption("Formula: Δ = (Resale Econ Gap − Upcycling Adjusted Gap) × Scale Context, compared against Band ±{b}".format(b=op_band))
+    node  = cfg["operational"]["matrix"][category][segment]
+    scale = cfg["operational"]["scale_context"][category][segment]
+    resale_econ_gap = node["resale"]["econ_gap"]
+    up_adj_gap_base = node["upcycling"]["adjusted_gap"]
+    st.markdown((
+        "- **Scale context**: `{scale}`\n"
+        "- **Resale** — Econ gap: `{resale}` → Adjusted = `{adj_res}`\n"
+        "- **Upcycling** — Adjusted gap (base): `{up_base}` → Adjusted = `{adj_up}`"
+    ).format(
+        scale=scale, resale=resale_econ_gap,
+        adj_res=f"{oper.adjusted_resale_gap:.2f}",
+        up_base=up_adj_gap_base,
+        adj_up=f"{oper.adjusted_upcycling_gap:.2f}",
+    ))
+
+d_label   = "✗ None feasible" if d_status == "None feasible" else d_status
+d_expl    = OPER_EXPL[d_status]
+d_variant = _oper_variant(d_status)
+_hero(d_label, d_expl, d_variant)
+_divider()
+
+# ─────────────────────────────────────────────
+# SECTION E — Environmental Leverage
+# ─────────────────────────────────────────────
+_section("E", "Environmental Leverage")
+
+d1, d2, d3 = st.columns(3)
+with d1:
+    flag = True if env.env_resale < env.env_upcycling else False if env.env_resale > env.env_upcycling else None
+    _metric_card(
+        "Impact Resale  (↓ better)",
+        f"{env.env_resale:.2f}",
+        "resale",
+        right_html=_env_pill_inline_html(flag)
+    )
+
+with d2:
+    flag = True if env.env_upcycling < env.env_resale else False if env.env_upcycling > env.env_resale else None
+    _metric_card(
+        "Impact Upcycling  (↓ better)",
+        f"{env.env_upcycling:.2f}",
+        "up",
+        right_html=_env_pill_inline_html(flag)
+    )
+
+with d3:
+    _metric_card("Δ (Resale − Upcycling)", f"{env.delta_resale_minus_up:.2f}", "neutral")
+
+env_band = cfg["environment_neutral_band"]
+delta_env = env.delta_resale_minus_up
+
+direction_line = (
+    "Upcycling has a lower environmental impact" if delta_env > 0
+    else ("Resale has a lower environmental impact" if delta_env < 0 else "Same environmental impact")
+)
+relevance_applied = abs(delta_env) > env_band
+relevance_line = (
+    "Environmental performance is relevant under the current configuration."
+    if relevance_applied else
+    "Environmental impact is NOT decision-relevant under the current configuration."
+)
+e_label = "Environmental leverage applied" if relevance_applied else "Environmental neutral"
+_hero(e_label, f"{direction_line}.\n{relevance_line}", "info")
+_divider()
+
+# ─────────────────────────────────────────────
+# SECTION F — Final Recommendation
+# ─────────────────────────────────────────────
+_section("F", "Model Recommendation")
+
+f_label   = badge_final_from_operational(d_status)
+f_variant = _final_variant(f_label)
+
+# Trade-off note
+chosen_model = None
+if f_label in ["Resale only", "Resale preferred"]:       chosen_model = "Resale"
+elif f_label in ["Upcycling only", "Upcycling preferred"]: chosen_model = "Upcycling"
+
+env_lower = "Upcycling" if delta_env > 0 else ("Resale" if delta_env < 0 else None)
+tradeoff_note = ""
+if chosen_model and env_lower and chosen_model != env_lower:
+    tradeoff_note = "⚠ Trade-off between economic feasibility and environmental performance."
+
+final_text = FINAL_LONG_TEXT[f_label]
+if tradeoff_note:
+    if not final_text.strip().endswith("."):
+        final_text = final_text.strip() + "."
+    final_text = f"{final_text}\n\n{tradeoff_note}"
+
+_final_box(f_label, final_text, f_variant)
+
+# ─────────────────────────────────────────────
+# DECISION TRACE
+# ─────────────────────────────────────────────
+st.markdown('<div style="margin-top:1.5rem;"></div>', unsafe_allow_html=True)
+with st.expander("Decision trace"):
+    econ_check = "✓" if econ_initial != "None feasible" else "✗"
+    scal_check = "✓" if d_status in ["Resale preferred", "Upcycling preferred", "Neutral", "Resale only", "Upcycling only"] else "✗"
+    env_label  = "Environmental leverage applied" if relevance_applied else "Environmental neutral"
+    st.write(f"- **Economic feasibility** {econ_check}")
+    st.write(f"- **Scalability** {scal_check}")
+    st.write(f"- **{env_label}**")
