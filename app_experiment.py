@@ -336,7 +336,7 @@ def _legend():
     <span>Resale</span>
   </div>
   <div class="legend-chip">
-    <div class="legend-dot" style="background:#7A1E2C;"></div>
+    <div class="legend-dot" style="background:#C98A00;"></div>
     <span>Upcycling</span>
   </div>
 </div>
