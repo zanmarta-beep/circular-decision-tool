@@ -661,25 +661,35 @@ _divider()
 # ─────────────────────────────────────────────
 _section("E", "Model Recommendation")
 
-f_label   = final_label_with_icon(d_status)   # <-- NEW (HTML label with bigger icon)
-f_variant = _final_variant(badge_final_from_operational(d_status))  # keep variant logic stable
+# 1) label "pulita" per logica e lookup nel dict
+f_key = badge_final_from_operational(d_status)
 
-# Trade-off note
+# 2) label "bella" (HTML) solo per display
+f_label = final_label_with_icon(d_status)
+
+# 3) variante colore deve basarsi sulla key pulita
+f_variant = _final_variant(f_key)
+
+# Trade-off note (usa f_key!)
 chosen_model = None
-if f_label in ["Resale only", "Resale preferred"]:       chosen_model = "Resale"
-elif f_label in ["Upcycling only", "Upcycling preferred"]: chosen_model = "Upcycling"
+if f_key in ["Resale only", "Resale preferred"]:
+    chosen_model = "Resale"
+elif f_key in ["Upcycling only", "Upcycling preferred"]:
+    chosen_model = "Upcycling"
 
 env_lower = "Upcycling" if delta_env > 0 else ("Resale" if delta_env < 0 else None)
 tradeoff_note = ""
 if chosen_model and env_lower and chosen_model != env_lower:
     tradeoff_note = "⚠ Trade-off between economic feasibility and environmental performance."
 
-final_text = FINAL_LONG_TEXT[f_label]
+# testo finale dal dict usando la key pulita
+final_text = FINAL_LONG_TEXT[f_key]
 if tradeoff_note:
     if not final_text.strip().endswith("."):
         final_text = final_text.strip() + "."
     final_text = f"{final_text}\n\n{tradeoff_note}"
 
+# render finale con label HTML + body
 _final_box(f_label, final_text, f_variant)
 
 # ─────────────────────────────────────────────
