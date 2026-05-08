@@ -232,6 +232,13 @@ html, body, [class*="css"] {
 .csa-title, .section-title, .metric-value, .hero-box-label, .final-box-label {
   font-family: 'DM Sans', sans-serif !important;
 }
+/* Bigger icon only for final recommendation label */
+.final-icon {
+  font-size: 1.35em;     /* increase emoji size */
+  line-height: 1;
+  margin-right: 8px;
+  vertical-align: -2px;  /* better alignment with text */
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -414,6 +421,27 @@ def badge_final_from_operational(d_status: str) -> str:
         return "✗ None feasible"
     return "Hybrid / Strategic use"
 
+def final_label_with_icon(d_status: str) -> str:
+    """
+    Returns HTML label for Section F with a slightly larger icon.
+    Uses:
+      🧥 for Resale outcomes
+      ♻️ for Upcycling outcomes
+      🔀 for Neutral/Hybrid
+      (no big icon for None feasible)
+    """
+    base = badge_final_from_operational(d_status)
+
+    if d_status in ["Resale only", "Resale preferred"]:
+        return f'<span class="final-icon">🧥</span>{base}'
+    if d_status in ["Upcycling only", "Upcycling preferred"]:
+        return f'<span class="final-icon">♻️</span>{base}'
+    if d_status == "Neutral":
+        return f'<span class="final-icon">🔀</span>Hybrid / Strategic use'
+    if d_status == "None feasible":
+        return "✗ None feasible"
+
+    return base
 # ─────────────────────────────────────────────
 # LOAD CONFIG
 # ─────────────────────────────────────────────
@@ -633,8 +661,8 @@ _divider()
 # ─────────────────────────────────────────────
 _section("E", "Model Recommendation")
 
-f_label   = badge_final_from_operational(d_status)
-f_variant = _final_variant(f_label)
+f_label   = final_label_with_icon(d_status)   # <-- NEW (HTML label with bigger icon)
+f_variant = _final_variant(badge_final_from_operational(d_status))  # keep variant logic stable
 
 # Trade-off note
 chosen_model = None
