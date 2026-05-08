@@ -201,6 +201,22 @@ html, body, [class*="css"] {
   margin-top: 5px;
 }
 
+/* ── Inline status pill inside metric value row ── */
+.value-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pill-inline {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
 /* ── Sidebar tweaks ── */
 [data-testid="stSidebar"] {
   background: #fff;
@@ -256,24 +272,24 @@ def _section(badge: str, title: str):
 </div>
 """, unsafe_allow_html=True)
 
-def _metric_card(label: str, value: str, variant: str = "neutral"):
+def _metric_card(label: str, value: str, variant: str = "neutral", pill_html: str = ""):
     st.markdown(f"""
 <div class="metric-card metric-{variant}">
   <div class="metric-label">{label}</div>
-  <div class="metric-value">{value}</div>
+  <div class="value-row">
+    <div class="metric-value">{value}</div>
+    {pill_html}
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
-def _pill(text: str, color: str, bg: str):
-    st.markdown(f"""
-<span class="pill" style="color:{color};background:{bg};">{text}</span>
-""", unsafe_allow_html=True)
+def _pill_inline_html(text: str, color: str, bg: str) -> str:
+    return f"""<span class="pill-inline" style="color:{color};background:{bg};">{text}</span>"""
 
-def _status_pill(ok: bool):
+def _status_pill_inline_html(ok: bool) -> str:
     if ok:
-        _pill("✓ PASS", "#15803D", "#F0FDF4")
-    else:
-        _pill("✗ FAIL", "#B91C1C", "#FEF2F2")
+        return _pill_inline_html("✓ PASS", "#15803D", "#F0FDF4")
+    return _pill_inline_html("✗ FAIL", "#B91C1C", "#FEF2F2")
 
 def _env_pill(is_lower):
     if is_lower is None:
@@ -445,8 +461,12 @@ with c1:
 with c2:
     _metric_card("Cost — Resale", f"{econ.cost_resale:.2f}", "resale")
 with c3:
-    _metric_card("Score Resale (margin − cost)", f"{econ.econ_score_resale:.2f}", "resale")
-    _status_pill(econ.feasible_resale)
+_metric_card(
+    "Score Resale (margin − cost)",
+    f"{econ.econ_score_resale:.2f}",
+    "resale",
+    pill_html=_status_pill_inline_html(econ.feasible_resale)
+)
 
 with gap:
     st.markdown('<div style="height:56px;border-left:1px dashed #E2E8F0;margin:0 auto;width:1px;"></div>', unsafe_allow_html=True)
@@ -456,8 +476,12 @@ with c4:
 with c5:
     _metric_card("Cost — Upcycling", f"{econ.cost_upcycling:.2f}", "up")
 with c6:
-    _metric_card("Score Upcycling (margin − cost)", f"{econ.econ_score_upcycling:.2f}", "up")
-    _status_pill(econ.feasible_upcycling)
+_metric_card(
+    "Score Upcycling (margin − cost)",
+    f"{econ.econ_score_upcycling:.2f}",
+    "up",
+    pill_html=_status_pill_inline_html(econ.feasible_upcycling)
+)
 
 # Econ outcome
 if econ.feasible_resale and econ.feasible_upcycling:
