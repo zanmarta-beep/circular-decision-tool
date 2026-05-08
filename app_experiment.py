@@ -228,13 +228,14 @@ html, body, [class*="css"] {
 [data-testid="stSidebar"] h2 {
   font-family: 'DM Sans', sans-serif !important;
 }
-</style>
-""", unsafe_allow_html=True)
-
 /* Force uniform font across headers, metrics and boxes */
 .csa-title, .section-title, .metric-value, .hero-box-label, .final-box-label {
   font-family: 'DM Sans', sans-serif !important;
 }
+</style>
+""", unsafe_allow_html=True)
+
+
 # ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
